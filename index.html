@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="theme-color" content="#0f0f12"/>
+<title>Clasificación en Vivo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f0f12;--panel:#17171d;--border:#2a2a35;--text:#f0f0f5;--dim:#8888aa;
+  --accent:#e8231a;--cyan:#22d3ee;--green:#4ade80;--amber:#fbbf24;--red:#f87171;
+  --purple:#a855f7;--blue:#60a5fa;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow-x:hidden}
+
+/* ── Header ── */
+.header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:1px solid var(--border);
+  padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;}
+.header-title{flex:1;font-size:1rem;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-race{font-size:0.7rem;color:var(--dim);margin-top:1px}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:all .3s}
+.status-dot.live{background:var(--green);box-shadow:0 0 0 3px rgba(74,222,128,0.2);animation:pulse 2s infinite}
+.status-dot.stale{background:var(--amber)}
+.status-dot.offline{background:var(--red)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(74,222,128,0.2)}50%{box-shadow:0 0 0 6px rgba(74,222,128,0)}}
+.refresh-btn{background:none;border:1px solid var(--border);color:var(--dim);padding:0.3rem 0.7rem;
+  border-radius:20px;font-size:0.7rem;cursor:pointer;font-family:inherit}
+.refresh-btn:active{opacity:0.7}
+
+/* ── Views ── */
+.view{display:none;animation:fadeIn .2s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── Category list ── */
+.cat-list{padding:0.75rem}
+.cat-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:1rem 1.1rem;margin-bottom:0.65rem;cursor:pointer;
+  display:flex;align-items:center;gap:0.75rem;
+  transition:all .15s;active:opacity:0.8}
+.cat-card:active{transform:scale(0.98);opacity:0.85}
+.cat-card-icon{font-size:1.5rem;flex-shrink:0}
+.cat-card-info{flex:1;min-width:0}
+.cat-card-name{font-size:1rem;font-weight:700}
+.cat-card-sub{font-size:0.72rem;color:var(--dim);margin-top:2px}
+.cat-card-badge{background:rgba(232,35,26,0.15);color:var(--accent);
+  border-radius:8px;padding:0.2rem 0.55rem;font-size:0.72rem;font-weight:700;flex-shrink:0}
+.cat-card-arrow{color:var(--dim);font-size:1.1rem;flex-shrink:0}
+
+/* ── Tab bar (category / scratch / transversal) ── */
+.tab-bar{display:flex;gap:0.35rem;padding:0.6rem 0.75rem 0;overflow-x:auto;
+  scrollbar-width:none;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:0.38rem 0.9rem;border-radius:20px;border:none;cursor:pointer;
+  font-weight:700;font-size:0.72rem;font-family:inherit;transition:all .15s}
+.tab-btn.active-cats{background:var(--accent);color:#fff}
+.tab-btn.active-scratch{background:var(--purple);color:#fff}
+.tab-btn.active-tv{background:#0891b2;color:#fff}
+.tab-btn.inactive{background:var(--panel);color:var(--dim)}
+
+/* ── Back button ── */
+.back-btn{background:none;border:none;color:var(--cyan);font-size:0.85rem;font-weight:700;
+  cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:0.3rem;padding:0.4rem 0}
+
+/* ── Classification table ── */
+.clasif-view{display:flex;flex-direction:column;height:calc(100vh - 56px)}
+.clasif-header{padding:0.6rem 0.9rem;flex-shrink:0;background:var(--bg)}
+.clasif-cat-title{font-size:1.1rem;font-weight:800;margin-top:0.1rem}
+.clasif-meta{font-size:0.68rem;color:var(--dim);margin-top:2px}
+.clasif-scroll{flex:1;overflow:auto;padding:0 0.5rem 1rem}
+
+.pilot-row{display:flex;align-items:center;gap:0.6rem;padding:0.7rem 0.7rem;
+  border-radius:10px;margin-bottom:0.35rem;cursor:pointer;
+  background:var(--panel);border:1px solid var(--border);transition:all .15s}
+.pilot-row:active{transform:scale(0.98)}
+.pilot-row.podium-1{border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.06)}
+.pilot-row.podium-2{border-color:rgba(148,163,184,0.4);background:rgba(148,163,184,0.05)}
+.pilot-row.podium-3{border-color:rgba(205,124,58,0.4);background:rgba(205,124,58,0.05)}
+.pilot-row.dnf{opacity:0.55}
+.pilot-row.dsq{opacity:0.4}
+.pr-pos{font-size:1.2rem;font-weight:900;min-width:36px;text-align:center;flex-shrink:0}
+.pr-dorsal{font-family:monospace;font-weight:800;font-size:1rem;color:var(--accent);
+  min-width:36px;text-align:center;flex-shrink:0}
+.pr-info{flex:1;min-width:0}
+.pr-name{font-size:0.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-cat{font-size:0.65rem;color:var(--dim);margin-top:1px}
+.pr-right{text-align:right;flex-shrink:0}
+.pr-total{font-family:monospace;font-weight:800;font-size:0.9rem;color:var(--red)}
+.pr-diff{font-family:monospace;font-size:0.65rem;color:var(--dim)}
+.pr-status{font-size:0.72rem;font-weight:700;padding:0.15rem 0.45rem;border-radius:6px}
+.pr-status.fin{background:rgba(74,222,128,0.15);color:var(--green)}
+.pr-status.dnf{background:rgba(251,191,36,0.15);color:var(--amber)}
+.pr-status.dsq{background:rgba(248,113,113,0.15);color:var(--red)}
+.pr-status.prog{background:rgba(34,211,238,0.1);color:var(--cyan)}
+
+/* ── Pilot detail ── */
+.detail-view{padding:0.75rem;overflow:auto;height:calc(100vh - 56px)}
+.detail-hero{background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:1rem 1.1rem;margin-bottom:0.75rem;display:flex;gap:1rem;align-items:center}
+.detail-dorsal{font-family:monospace;font-size:2.5rem;font-weight:900;color:var(--accent);line-height:1}
+.detail-info{flex:1}
+.detail-name{font-size:1rem;font-weight:700;line-height:1.2}
+.detail-sub{font-size:0.72rem;color:var(--dim);margin-top:3px}
+.detail-pos{text-align:right}
+.detail-pos-num{font-size:2rem;font-weight:900;line-height:1}
+.detail-pos-label{font-size:0.62rem;color:var(--dim)}
+
+.section-title{font-size:0.65rem;font-weight:700;color:var(--dim);text-transform:uppercase;
+  letter-spacing:0.08em;margin-bottom:0.4rem;margin-top:0.75rem}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.4rem;margin-bottom:0.1rem}
+.detail-cell{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+  padding:0.55rem 0.7rem}
+.detail-cell-label{font-size:0.6rem;color:var(--dim);margin-bottom:2px}
+.detail-cell-val{font-family:monospace;font-weight:700;font-size:0.88rem}
+.detail-cell-val.good{color:var(--blue)}
+.detail-cell-val.pen{color:var(--red)}
+.detail-cell-val.total{color:var(--red);font-size:1.1rem}
+.detail-cell-val.green{color:var(--green)}
+
+/* ── Empty / loading ── */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:3rem 1.5rem;text-align:center;color:var(--dim)}
+.empty-icon{font-size:3rem;margin-bottom:0.75rem}
+.empty-text{font-size:0.85rem;line-height:1.5}
+.loading{display:flex;align-items:center;justify-content:center;padding:3rem;gap:0.5rem;color:var(--dim)}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Update toast ── */
+.toast{position:fixed;bottom:1rem;left:50%;transform:translateX(-50%) translateY(8px);
+  background:var(--panel);border:1px solid var(--border);border-radius:20px;
+  padding:0.4rem 1rem;font-size:0.72rem;color:var(--green);opacity:0;transition:all .3s;
+  pointer-events:none;z-index:9999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="flex:1;min-width:0">
+    <div class="header-title" id="hTitle">Clasificación en Vivo</div>
+    <div class="header-race" id="hRace">Cargando…</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
+    <span class="status-dot offline" id="statusDot"></span>
+    <button class="refresh-btn" onclick="fetchData()">↻</button>
+  </div>
+</div>
+
+<!-- VIEW: Category list -->
+<div class="view active" id="vCats">
+  <div id="tabBar" class="tab-bar" style="display:none"></div>
+  <div class="cat-list" id="catList">
+    <div class="loading"><div class="spinner"></div> Cargando…</div>
+  </div>
+</div>
+
+<!-- VIEW: Classification list -->
+<div class="view" id="vClasif">
+  <div class="clasif-view">
+    <div class="clasif-header">
+      <button class="back-btn" onclick="showCats()">← Categorías</button>
+      <div class="clasif-cat-title" id="clasifTitle"></div>
+      <div class="clasif-meta" id="clasifMeta"></div>
+    </div>
+    <div class="clasif-scroll" id="clasifList"></div>
+  </div>
+</div>
+
+<!-- VIEW: Pilot detail -->
+<div class="view" id="vDetail">
+  <div class="detail-view" id="detailContent">
+    <button class="back-btn" onclick="showClasif()">← Clasificación</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Configuración ─────────────────────────────────────────────────────────
+// Si el live.json está en el mismo repo (GitHub Pages), la URL relativa funciona.
+// Si quieres apuntar a otro sitio, cambia DATA_URL:
+const DATA_URL = './live.json';
+const POLL_MS  = 20000; // 20 segundos
+
+// ── Estado ────────────────────────────────────────────────────────────────
+let gData = null;
+let gView = 'cats';    // cats | clasif | detail
+let gCatSel = null;    // nombre de categoría o "scratch" o "tv:LABEL"
+let gPilotId = null;
+let gLastEtag = null;
+let gPollTimer = null;
+
+// ── Fetch datos ────────────────────────────────────────────────────────────
+async function fetchData() {
+  try {
+    const headers = {};
+    if (gLastEtag) headers['If-None-Match'] = gLastEtag;
+    const resp = await fetch(DATA_URL + '?_=' + Date.now(), { headers });
+    if (resp.status === 304) { setStatus('live'); return; }
+    if (!resp.ok) throw new Error(resp.status);
+    gLastEtag = resp.headers.get('ETag');
+    const raw = await resp.json();
+    const changed = JSON.stringify(raw) !== JSON.stringify(gData);
+    gData = raw;
+    setStatus('live');
+    if (changed) {
+      renderAll();
+      showToast('✓ Actualizado');
+    }
+  } catch(e) {
+    setStatus('offline');
+  }
+}
+
+function setStatus(s) {
+  const d = document.getElementById('statusDot');
+  d.className = 'status-dot ' + s;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── Parsers / helpers ─────────────────────────────────────────────────────
+function parseT(s) {
+  if (!s) return null;
+  s = String(s).trim();
+  const p = s.split(':');
+  try {
+    if (p.length === 3) return +p[0]*3600 + +p[1]*60 + +p[2];
+    if (p.length === 2) return s.includes('.') ? +p[0]*60 + +p[1] : +p[0]*3600 + +p[1]*60;
+  } catch(e) {}
+  return null;
+}
+
+function fmtT(s) {
+  if (!s) return '—';
+  const a = Math.abs(s), ms = Math.round((a%1)*1000), sec = Math.floor(a)%60,
+    m = Math.floor(Math.floor(a)/60), h = Math.floor(m/60), mm = m%60;
+  return h > 0 ? `${h}:${String(mm).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${String(ms).padStart(3,'0')}`
+               : `${mm}:${String(sec).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+}
+
+function fmtPen(s) {
+  if (!s) return '';
+  const a = Math.abs(Math.round(s));
+  return `${Math.floor(a/60)}'${String(a%60).padStart(2,'0')}"`;
+}
+
+function fmtHHMM(s) {
+  if (!s) return '—';
+  const a = Math.floor(s) % 86400;
+  return `${String(Math.floor(a/3600)).padStart(2,'0')}:${String(Math.floor((a%3600)/60)).padStart(2,'0')}`;
+}
+
+function getNumLaps(rider, cfg) {
+  const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
+  const v = cat && cat.numLaps;
+  try { return v ? parseInt(v) : parseInt(cfg.numLaps||1); } catch(e) { return 1; }
+}
+
+function getChTime(rider, cfg, lap, ctrl) {
+  const k = `${lap}-${ctrl}`;
+  const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
+  if (cat && cat.chtimes && cat.chtimes[k] != null) return parseFloat(cat.chtimes[k]);
+  const v = cfg.defaultCHTimes && cfg.defaultCHTimes[k];
+  return v != null ? parseFloat(v) : 30;
+}
+
+function stageScores(cfg, s, l, cat) {
+  if (cat) { const v = cat.stageScoring && cat.stageScoring[`s${s}-l${l}`]; if (v != null) return !!v; }
+  const v = cfg.stageScoring && cfg.stageScoring[`s${s}-l${l}`];
+  return v == null ? true : !!v;
+}
+
+function computeSchedule(riders, cfg) {
+  const cats = cfg.categories || [];
+  const catOrd = cats.map(c => c.name);
+  const groups = {}; catOrd.forEach(n => groups[n] = []);
+  const unknown = [];
+  riders.filter(r => !r.dns).forEach(r => {
+    (groups[r.categoria] !== undefined ? groups[r.categoria] : unknown).push(r);
+  });
+  const ordered = [];
+  catOrd.forEach(name => {
+    const cat = cats.find(c => c.name === name);
+    const m = [...(groups[name]||[])].sort((a,b) => parseInt(a.dorsal)-parseInt(b.dorsal));
+    if (cat && cat.reverseTop10) {
+      const top = m.filter(r => parseInt(r.dorsal) <= 10).reverse();
+      const rest = m.filter(r => parseInt(r.dorsal) > 10);
+      ordered.push(...top, ...rest);
+    } else ordered.push(...m);
+  });
+  unknown.sort((a,b) => parseInt(a.dorsal)-parseInt(b.dorsal));
+  ordered.push(...unknown);
+  const base = parseT(cfg.startTime) || (10*3600+15*60);
+  const cad = (parseInt(cfg.cadence)||1)*60, grp = Math.max(1, parseInt(cfg.groupSize)||1);
+  let cursor = base;
+  return ordered.map((rider, idx) => {
+    if (idx === 0) cursor = base;
+    else {
+      if (rider.categoria !== ordered[idx-1].categoria) cursor = Math.ceil((cursor+1)/60)*60;
+      else if (Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
+    }
+    return { ...rider, startSecs: cursor, startStr: fmtHHMM(cursor) };
+  });
+}
+
+function buildResults(schedule, cfg, timing, stageData) {
+  const nS = parseInt(cfg.numStages)||2, nC = parseInt(cfg.numTimeControls)||1;
+  const cats = cfg.categories||[];
+  return schedule.map(r => {
+    const nL = getNumLaps(r, cfg);
+    const rt = timing[r.id] || {};
+    const cat = cats.find(c => c.name === r.categoria);
+    // Expected CH times
+    let cur = parseT(rt.actualStart) || r.startSecs;
+    const chExpected = {}, chPens = {};
+    let tcPen = 0;
+    for (let lap = 1; lap <= nL; lap++) {
+      for (let ctrl = 1; ctrl <= nC; ctrl++) {
+        const exp = cur + getChTime(r, cfg, lap, ctrl)*60;
+        const stored = rt[`${lap}-${ctrl}`];
+        const actual = stored ? parseT(stored.actual) : null;
+        const diff = actual != null ? actual - exp : 0;
+        chExpected[`${lap}-${ctrl}`] = exp;
+        chPens[`${lap}-${ctrl}`] = Math.abs(diff);
+        tcPen += Math.abs(diff);
+        cur = actual != null ? actual : exp;
+      }
+    }
+    const actualStart = parseT(rt.actualStart);
+    const startPen = actualStart ? Math.max(0, actualStart - r.startSecs) : 0;
+    const manStr = rt.manualPenalty||'';
+    let manPen = 0;
+    if (manStr) {
+      if (manStr.includes(':')) { const p = manStr.split(':'); try { manPen = parseInt(p[0])*60+parseInt(p[1]); } catch(e){} }
+      else { try { manPen = parseFloat(manStr); } catch(e){} }
+    }
+    // Stage times
+    const stTimes = {}, chActual = {};
+    let stTotal = 0;
+    for (let s = 1; s <= nS; s++) {
+      const sd = (stageData && stageData[`stage_${s}`]) || {};
+      for (let l = 1; l <= nL; l++) {
+        if (!stageScores(cfg, s, l, cat)) continue;
+        const ov = rt[`crono_${s}_${l}`];
+        const raw = (ov && ov.actual) || (sd[r.dorsal] && sd[r.dorsal][l]);
+        const sc = parseT(raw);
+        if (sc) { stTimes[`${s}-${l}`] = sc; stTotal += sc; }
+      }
+    }
+    // CH actual times
+    for (let lap = 1; lap <= nL; lap++) for (let ctrl = 1; ctrl <= nC; ctrl++) {
+      const stored = rt[`${lap}-${ctrl}`];
+      if (stored && stored.actual) chActual[`${lap}-${ctrl}`] = stored.actual;
+    }
+    const penTotal = startPen + tcPen + manPen;
+    const finished = rt.finished || false;
+    const status = rt.status || 'ok';
+    return { ...r, nL, nC, chPens, chActual, chExpected,
+      startPen, manPen, tcPen, penTotal, stTimes, stTotal,
+      total: penTotal + stTotal, status, finished };
+  });
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+function renderAll() {
+  if (!gData) return;
+  const cfg = gData.config || {};
+  document.getElementById('hTitle').textContent = cfg.name || 'Clasificación en Vivo';
+  document.getElementById('hRace').textContent = cfg.date || '';
+  renderTabBar();
+  if (gView === 'cats') renderCatList();
+  else if (gView === 'clasif') renderClasif();
+  else if (gView === 'detail') renderDetail();
+}
+
+function renderTabBar() {
+  const cfg = gData.config || {};
+  const riders = gData.riders || [];
+  const scratchCats = (cfg.categories||[]).filter(c => c.inScratch).map(c => c.name);
+  const tvGroups = [...new Set(riders.map(r => r.transversal||'').filter(v => v))].sort();
+  const bar = document.getElementById('tabBar');
+  if (!scratchCats.length && !tvGroups.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  let html = `<button class="tab-btn ${gCatSel === '__cats__' || !gCatSel ? 'active-cats' : 'inactive'}" onclick="switchTab('__cats__')">Por categorías</button>`;
+  if (scratchCats.length) html += `<button class="tab-btn ${gCatSel === '__scratch__' ? 'active-scratch' : 'inactive'}" onclick="switchTab('__scratch__')">✨ Scratch</button>`;
+  tvGroups.forEach(label => {
+    const active = gCatSel === '__tv__' + label;
+    html += `<button class="tab-btn ${active ? 'active-tv' : 'inactive'}" onclick="switchTab('__tv__${label}')">🏅 ${label}</button>`;
+  });
+  bar.innerHTML = html;
+}
+
+function switchTab(sel) {
+  gCatSel = sel;
+  renderTabBar();
+  renderCatList();
+}
+
+function renderCatList() {
+  if (!gData) return;
+  const cfg = gData.config || {};
+  const timing = gData.timing || {};
+  const stageData = gData.stageData || {};
+  const allRiders = gData.riders || [];
+  const schedule = computeSchedule(allRiders.filter(r => !r.dns), cfg);
+  const results = buildResults(schedule, cfg, timing, stageData);
+
+  const sel = gCatSel || '__cats__';
+  let catsToShow;
+  if (sel === '__scratch__') {
+    const scratchCats = (cfg.categories||[]).filter(c => c.inScratch).map(c => c.name);
+    catsToShow = [{name:'Scratch', riders: results.filter(r => scratchCats.includes(r.categoria))}];
+  } else if (sel.startsWith('__tv__')) {
+    const label = sel.slice(6);
+    const catNames = [...new Set(results.filter(r => r.transversal === label).map(r => r.categoria))];
+    catsToShow = catNames.map(cn => ({name: cn, riders: results.filter(r => r.transversal === label && r.categoria === cn)}));
+  } else {
+    catsToShow = (cfg.categories||[]).map(cat => ({
+      name: cat.name,
+      riders: results.filter(r => r.categoria === cat.name)
+    })).filter(c => c.riders.length > 0);
+  }
+
+  const list = document.getElementById('catList');
+  if (!catsToShow.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">🏁</div><div class="empty-text">Sin datos aún</div></div>';
+    return;
+  }
+
+  list.innerHTML = catsToShow.map(({name, riders}) => {
+    const finished = riders.filter(r => (r.finished || r.status === 'ok') && r.stTotal > 0).length;
+    const total = riders.length;
+    const icons = ['🏍️','🏎️','🏁','⏱️'];
+    const icon = icons[Math.abs(name.charCodeAt(0)) % icons.length];
+    return `
+      <div class="cat-card" onclick="showClasifFor('${encodeURIComponent(name)}','${encodeURIComponent(sel)}')">
+        <div class="cat-card-icon">${icon}</div>
+        <div class="cat-card-info">
+          <div class="cat-card-name">${name}</div>
+          <div class="cat-card-sub">${finished} finalizados · ${total} pilotos</div>
+        </div>
+        <div class="cat-card-badge">${total}</div>
+        <div class="cat-card-arrow">›</div>
+      </div>`;
+  }).join('');
+}
+
+function showClasifFor(catEnc, selEnc) {
+  gCatSel = decodeURIComponent(selEnc);
+  gView = 'clasif';
+  window._clasifCat = decodeURIComponent(catEnc);
+  renderClasif();
+  showView('vClasif');
+}
+
+function renderClasif() {
+  if (!gData) return;
+  const catName = window._clasifCat;
+  const cfg = gData.config || {};
+  const timing = gData.timing || {};
+  const stageData = gData.stageData || {};
+  const allRiders = gData.riders || [];
+  const schedule = computeSchedule(allRiders.filter(r => !r.dns), cfg);
+  let results = buildResults(schedule, cfg, timing, stageData);
+
+  const sel = gCatSel || '__cats__';
+  if (sel === '__scratch__') {
+    const sc = (cfg.categories||[]).filter(c => c.inScratch).map(c => c.name);
+    results = results.filter(r => sc.includes(r.categoria));
+  } else if (sel.startsWith('__tv__')) {
+    const label = sel.slice(6);
+    results = results.filter(r => r.transversal === label && r.categoria === catName);
+  } else {
+    results = results.filter(r => r.categoria === catName);
+  }
+
+  results.sort((a, b) => {
+    const aOk = a.status === 'ok' && !a.autoDsq, bOk = b.status === 'ok' && !b.autoDsq;
+    if (aOk && !bOk) return -1; if (!aOk && bOk) return 1;
+    if (!aOk) return 0;
+    if (a.stTotal > 0 && !b.stTotal) return -1; if (!a.stTotal && b.stTotal > 0) return 1;
+    return a.total - b.total;
+  });
+
+  document.getElementById('clasifTitle').textContent = catName;
+  document.getElementById('clasifMeta').textContent =
+    `${results.filter(r => r.stTotal > 0 && r.status === 'ok').length} finalizados · ${results.length} pilotos`;
+
+  let pos = 0, leader = null;
+  const html = results.map(r => {
+    const ok = r.status === 'ok' && r.stTotal > 0;
+    if (ok) { pos++; if (leader === null) leader = r.total; }
+    const podium = ok && pos <= 3 ? `podium-${pos}` : '';
+    const posEl = ok ? (pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos+'°') : '—';
+    const stEl = r.status === 'dnf' ? '<span class="pr-status dnf">DNF</span>'
+               : r.status === 'dsq' ? '<span class="pr-status dsq">DSQ</span>'
+               : r.finished ? '<span class="pr-status fin">✓ FIN</span>'
+               : r.stTotal > 0 ? '<span class="pr-status prog">En curso</span>' : '';
+    const diff = ok && pos > 1 ? `+${fmtT(r.total - leader)}` : '';
+    return `
+      <div class="pilot-row ${podium} ${r.status === 'dnf' ? 'dnf' : r.status === 'dsq' ? 'dsq' : ''}"
+           onclick="showDetail('${r.id}')">
+        <div class="pr-pos">${posEl}</div>
+        <div class="pr-dorsal">${r.dorsal}</div>
+        <div class="pr-info">
+          <div class="pr-name">${r.fullName}</div>
+          <div class="pr-cat">${r.categoria}${r.club ? ' · ' + r.club : ''}</div>
+        </div>
+        <div class="pr-right">
+          ${ok ? `<div class="pr-total">${fmtT(r.total)}</div><div class="pr-diff">${diff}</div>` : stEl}
+        </div>
+      </div>`;
+  }).join('') || '<div class="empty"><div class="empty-icon">🏁</div><div class="empty-text">Sin datos aún</div></div>';
+
+  document.getElementById('clasifList').innerHTML = html;
+}
+
+function showDetail(riderId) {
+  gPilotId = riderId;
+  gView = 'detail';
+  renderDetail();
+  showView('vDetail');
+}
+
+function renderDetail() {
+  if (!gData || !gPilotId) return;
+  const cfg = gData.config || {};
+  const timing = gData.timing || {};
+  const stageData = gData.stageData || {};
+  const allRiders = gData.riders || [];
+  const schedule = computeSchedule(allRiders.filter(r => !r.dns), cfg);
+  const results = buildResults(schedule, cfg, timing, stageData);
+
+  const r = results.find(x => x.id === gPilotId);
+  if (!r) { document.getElementById('detailContent').innerHTML = '<button class="back-btn" onclick="showClasif()">← Volver</button>'; return; }
+
+  // Compute position
+  const catResults = results.filter(x => x.categoria === r.categoria)
+    .filter(x => x.stTotal > 0 && x.status === 'ok')
+    .sort((a,b) => a.total - b.total);
+  const catPos = catResults.findIndex(x => x.id === r.id) + 1;
+  const nS = parseInt(cfg.numStages)||2, nC = parseInt(cfg.numTimeControls)||1;
+
+  let html = `<button class="back-btn" onclick="showClasif()">← ${r.categoria}</button>
+    <div class="detail-hero">
+      <div class="detail-dorsal">${r.dorsal}</div>
+      <div class="detail-info">
+        <div class="detail-name">${r.fullName}</div>
+        <div class="detail-sub">${r.categoria}${r.club ? ' · ' + r.club : ''}</div>
+        <div class="detail-sub" style="margin-top:4px;color:var(--cyan)">
+          Salida: ${r.startStr}${r.startPen > 0 ? ' <span style="color:var(--red)">+' + fmtPen(r.startPen) + ' tardío</span>' : ''}
+        </div>
+      </div>
+      ${catPos > 0 ? `<div class="detail-pos">
+        <div class="detail-pos-num">${catPos === 1 ? '🥇' : catPos === 2 ? '🥈' : catPos === 3 ? '🥉' : catPos+'°'}</div>
+        <div class="detail-pos-label">de ${catResults.length}</div>
+      </div>` : ''}
+    </div>`;
+
+  // Stage times (tramos)
+  if (r.stTotal > 0) {
+    html += `<div class="section-title">Tramos cronometrados</div><div class="detail-grid">`;
+    for (let l = 1; l <= r.nL; l++) {
+      for (let s = 1; s <= nS; s++) {
+        const t = r.stTimes[`${s}-${l}`];
+        if (t) html += `<div class="detail-cell">
+          <div class="detail-cell-label">Tramo ${s} · Vuelta ${l}</div>
+          <div class="detail-cell-val good">${fmtT(t)}</div>
+        </div>`;
+      }
+    }
+    html += `<div class="detail-cell" style="border-color:rgba(34,211,238,0.3)">
+      <div class="detail-cell-label">Σ Cronos</div>
+      <div class="detail-cell-val" style="color:var(--cyan)">${fmtT(r.stTotal)}</div>
+    </div></div>`;
+  }
+
+  // CH times
+  let hasCH = false;
+  let chHtml = `<div class="section-title">Controles Horarios</div><div class="detail-grid">`;
+  for (let l = 1; l <= r.nL; l++) {
+    for (let ctrl = 1; ctrl <= nC; ctrl++) {
+      const key = `${l}-${ctrl}`;
+      const actual = r.chActual[key];
+      const exp = r.chExpected[key];
+      const pen = r.chPens[key] || 0;
+      if (actual || exp) {
+        hasCH = true;
+        chHtml += `<div class="detail-cell">
+          <div class="detail-cell-label">CH${ctrl} · V${l}</div>
+          <div class="detail-cell-val ${pen > 0 ? 'pen' : 'good'}">${actual || fmtHHMM(exp)}</div>
+          ${pen > 0 ? `<div style="font-size:0.62rem;color:var(--red);margin-top:2px">+${fmtPen(pen)} pen.</div>` : ''}
+        </div>`;
+      }
+    }
+  }
+  chHtml += '</div>';
+  if (hasCH) html += chHtml;
+
+  // Penalties summary
+  const hasPen = r.penTotal > 0;
+  if (hasPen) {
+    html += `<div class="section-title">Penalizaciones</div><div class="detail-grid">`;
+    if (r.startPen > 0) html += `<div class="detail-cell"><div class="detail-cell-label">Salida tardía</div><div class="detail-cell-val pen">${fmtPen(r.startPen)}</div></div>`;
+    if (r.tcPen > 0) html += `<div class="detail-cell"><div class="detail-cell-label">CHs</div><div class="detail-cell-val pen">${fmtPen(r.tcPen)}</div></div>`;
+    if (r.manPen > 0) html += `<div class="detail-cell"><div class="detail-cell-label">Especial</div><div class="detail-cell-val pen">${fmtPen(r.manPen)}</div></div>`;
+    html += `<div class="detail-cell" style="border-color:rgba(248,113,113,0.3)">
+      <div class="detail-cell-label">Σ Penalizaciones</div>
+      <div class="detail-cell-val pen">${fmtPen(r.penTotal)}</div>
+    </div></div>`;
+  }
+
+  // Total
+  if (r.stTotal > 0) {
+    html += `<div class="section-title">Resultado</div>
+    <div class="detail-cell" style="border-color:rgba(248,113,113,0.4);margin-bottom:1rem">
+      <div class="detail-cell-label">Tiempo total</div>
+      <div class="detail-cell-val total">${fmtT(r.total)}</div>
+    </div>`;
+  }
+
+  // Notes
+  const rt = gData.timing && gData.timing[r.id];
+  if (rt && rt.notes) {
+    html += `<div class="section-title">Observaciones</div>
+    <div class="detail-cell" style="margin-bottom:1rem">
+      <div class="detail-cell-val" style="font-family:inherit;font-size:0.8rem;color:var(--dim)">${rt.notes}</div>
+    </div>`;
+  }
+
+  document.getElementById('detailContent').innerHTML = html;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showCats() { gView = 'cats'; renderCatList(); showView('vCats'); }
+function showClasif() { gView = 'clasif'; renderClasif(); showView('vClasif'); }
+
+// ── Init ───────────────────────────────────────────────────────────────────
+fetchData();
+gPollTimer = setInterval(fetchData, POLL_MS);
+
+// Refresh on tab focus
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') fetchData();
+});
+</script>
+</body>
+</html>
