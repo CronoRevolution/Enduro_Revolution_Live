@@ -134,12 +134,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   padding:0.4rem 1rem;font-size:0.72rem;color:var(--green);opacity:0;transition:all .3s;
   pointer-events:none;z-index:9999;white-space:nowrap}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.nav-btn{background:none;border:1px solid var(--border);color:var(--cyan);
+  font-size:1.25rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:8px;
+  cursor:pointer;transition:background .15s;line-height:1}
+.nav-btn:hover{background:var(--panel)}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div style="flex:1;min-width:0">
+  <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
+    <button class="nav-btn" id="btnBack" onclick="navBack()" style="display:none" aria-label="Atrás">‹</button>
+    <button class="nav-btn" id="btnHome" onclick="navHome()" style="display:none" aria-label="Inicio" title="Inicio">⌂</button>
+  </div>
+  <div style="flex:1;min-width:0;margin:0 0.4rem">
     <div class="header-title" id="hTitle">Clasificación en Vivo</div>
     <div class="header-race" id="hRace">Cargando…</div>
   </div>
@@ -464,6 +472,7 @@ function showClasifFor(catEnc, selEnc) {
   window._clasifCat = decodeURIComponent(catEnc);
   renderClasif();
   showView('vClasif');
+  history.pushState({view:'clasif', cat: gCatSel, sel: gSelFilter}, '', '');
 }
 
 function renderClasif() {
@@ -528,11 +537,12 @@ function renderClasif() {
   document.getElementById('clasifList').innerHTML = html;
 }
 
-function showDetail(riderId) {
+function showDetail(riderId, pushState = true) {
   gPilotId = riderId;
   gView = 'detail';
   renderDetail();
   showView('vDetail');
+  if (pushState) history.pushState({view:'detail', pid: riderId}, '', '');
 }
 
 function renderDetail() {
@@ -644,17 +654,58 @@ function renderDetail() {
   document.getElementById('detailContent').innerHTML = html;
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────
+// ── Navigation con History API ─────────────────────────────────────────────
+function updateNavButtons() {
+  const onCats = gView === 'cats';
+  document.getElementById('btnBack').style.display = onCats ? 'none' : 'inline-block';
+  document.getElementById('btnHome').style.display = onCats ? 'none' : 'inline-block';
+}
+
 function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  updateNavButtons();
 }
-function showCats() { gView = 'cats'; renderCatList(); showView('vCats'); }
-function showClasif() { gView = 'clasif'; renderClasif(); showView('vClasif'); }
+
+function showCats(pushState = true) {
+  gView = 'cats';
+  renderCatList();
+  showView('vCats');
+  if (pushState) history.pushState({view:'cats'}, '', '');
+}
+
+function showClasif(pushState = true) {
+  gView = 'clasif';
+  renderClasif();
+  showView('vClasif');
+  if (pushState) history.pushState({view:'clasif', cat: gCatSel, sel: gSelFilter}, '', '');
+}
+
+function navBack() {
+  if (gView === 'detail') showClasif();
+  else if (gView === 'clasif') showCats();
+}
+
+function navHome() {
+  showCats();
+}
+
+// Hardware back button (Android)
+window.addEventListener('popstate', (e) => {
+  const state = e.state || {};
+  if (gView === 'detail') {
+    showClasif(false);
+  } else if (gView === 'clasif') {
+    showCats(false);
+  }
+  // En cats no hacemos nada extra - el navegador sale normalmente
+});
 
 // ── Init ───────────────────────────────────────────────────────────────────
 fetchData();
 gPollTimer = setInterval(fetchData, POLL_MS);
+// Estado inicial en el historial
+history.replaceState({view:'cats'}, '', '');
 
 // Refresh on tab focus
 document.addEventListener('visibilitychange', () => {
