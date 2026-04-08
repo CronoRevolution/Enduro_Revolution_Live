@@ -182,7 +182,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 // ── Configuración ─────────────────────────────────────────────────────────
 // Si el live.json está en el mismo repo (GitHub Pages), la URL relativa funciona.
 // Si quieres apuntar a otro sitio, cambia DATA_URL:
-const DATA_URL = './live.json';
+// DATA_URL: usa el hash de la URL para sobreescribir, p.ej.:
+// index.html#https://usuario.github.io/repo/live.json
+const DATA_URL = (window.location.hash && window.location.hash.length > 1)
+  ? window.location.hash.slice(1)
+  : './live.json';
 const POLL_MS  = 20000; // 20 segundos
 
 // ── Estado ────────────────────────────────────────────────────────────────
