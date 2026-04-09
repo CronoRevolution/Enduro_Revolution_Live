@@ -692,20 +692,30 @@ function navHome() {
 
 // Hardware back button (Android)
 window.addEventListener('popstate', (e) => {
-  const state = e.state || {};
-  if (gView === 'detail') {
+  // Usar el estado destino (e.state) en lugar de gView actual
+  const dest = (e.state && e.state.view) || 'cats';
+  if (dest === 'detail') {
+    // No deberíamos llegar aquí desde atrás, pero por si acaso
+    if (gView !== 'detail') showDetail(e.state.pid || gPilotId, false);
+  } else if (dest === 'clasif') {
+    if (e.state && e.state.cat) { gCatSel = e.state.cat; window._clasifCat = e.state.cat; }
     showClasif(false);
-  } else if (gView === 'clasif') {
+  } else {
+    // dest === 'cats'
     showCats(false);
   }
-  // En cats no hacemos nada extra - el navegador sale normalmente
 });
 
 // ── Init ───────────────────────────────────────────────────────────────────
 fetchData();
 gPollTimer = setInterval(fetchData, POLL_MS);
-// Estado inicial en el historial
+// Estado inicial: ponemos 'cats' como base del historial
+// Añadimos un estado extra vacío para que el primer "atrás" vuelva a cats
+// en lugar de salir de la app
 history.replaceState({view:'cats'}, '', '');
+// Empujar un estado dummy al principio para absorber el primer swipe atrás del sistema
+// (Android a veces consume el primer popstate para el gesto de navegación del sistema)
+history.pushState({view:'cats'}, '', '');
 
 // Refresh on tab focus
 document.addEventListener('visibilitychange', () => {
