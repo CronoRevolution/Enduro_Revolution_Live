@@ -472,7 +472,8 @@ function showClasifFor(catEnc, selEnc) {
   window._clasifCat = decodeURIComponent(catEnc);
   renderClasif();
   showView('vClasif');
-  history.pushState({view:'clasif', cat: gCatSel, sel: gSelFilter}, '', '');
+  // Guardar TANTO el nombre de categoría (catName) COMO el filtro (catSel)
+  history.pushState({view:'clasif', catName: window._clasifCat, catSel: gCatSel}, '', '');
 }
 
 function renderClasif() {
@@ -678,30 +679,33 @@ function showClasif(pushState = true) {
   gView = 'clasif';
   renderClasif();
   showView('vClasif');
-  if (pushState) history.pushState({view:'clasif', cat: gCatSel, sel: gSelFilter}, '', '');
+  if (pushState) history.pushState({view:'clasif', catName: window._clasifCat, catSel: gCatSel}, '', '');
 }
 
 function navBack() {
-  if (gView === 'detail') showClasif();
-  else if (gView === 'clasif') showCats();
+  // Mismo comportamiento que el botón nativo del teléfono
+  history.back();
 }
 
 function navHome() {
-  showCats();
+  // Ir al inicio: volver tantos pasos como sea necesario
+  if (gView === 'detail') history.go(-2);
+  else if (gView === 'clasif') history.go(-1);
 }
 
 // Hardware back button (Android)
 window.addEventListener('popstate', (e) => {
-  // Usar el estado destino (e.state) en lugar de gView actual
-  const dest = (e.state && e.state.view) || 'cats';
+  const state = e.state || {};
+  const dest = state.view || 'cats';
   if (dest === 'detail') {
-    // No deberíamos llegar aquí desde atrás, pero por si acaso
-    if (gView !== 'detail') showDetail(e.state.pid || gPilotId, false);
+    if (state.pid) gPilotId = state.pid;
+    showDetail(gPilotId, false);
   } else if (dest === 'clasif') {
-    if (e.state && e.state.cat) { gCatSel = e.state.cat; window._clasifCat = e.state.cat; }
+    // Restaurar tanto el nombre de categoría como el filtro
+    if (state.catName !== undefined) window._clasifCat = state.catName;
+    if (state.catSel !== undefined) gCatSel = state.catSel;
     showClasif(false);
   } else {
-    // dest === 'cats'
     showCats(false);
   }
 });
