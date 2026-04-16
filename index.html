@@ -51,7 +51,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   display:flex;align-items:center;gap:0.75rem;
   transition:all .15s;active:opacity:0.8}
 .cat-card:active{transform:scale(0.98);opacity:0.85}
-.cat-card-icon{font-size:1.5rem;flex-shrink:0}
+.cat-card-icon img{filter:invert(0);}
+body.light .cat-card-icon img{filter:brightness(0) saturate(100%) invert(15%) sepia(5%) saturate(500%) hue-rotate(180deg);}
+.cat-card-icon{font-size:1.5rem;flex-shrink:0;display:flex;align-items:center;justify-content:center;width:42px}
 .cat-card-info{flex:1;min-width:0}
 .cat-card-name{font-size:1rem;font-weight:700}
 .cat-card-sub{font-size:0.72rem;color:var(--dim);margin-top:2px}
@@ -164,6 +166,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
   </div>
   <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
     <span class="status-dot offline" id="statusDot"></span>
+    <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tema">☀️</button>
     <button class="refresh-btn" onclick="fetchData()">↻</button>
   </div>
 </div>
@@ -479,8 +482,9 @@ function renderCatList() {
   list.innerHTML = catsToShow.map(({name, riders}) => {
     const finished = riders.filter(r => (r.finished || r.status === 'ok') && r.stTotal > 0).length;
     const total = riders.length;
-    const icons = ['🏍️','🏎️','🏁','⏱️'];
-    const icon = icons[Math.abs(name.charCodeAt(0)) % icons.length];
+    const isClassic = /evo|twin.?shock|classic|vintage|veteran|retro|hist/i.test(name);
+    const iconSrc = isClassic ? 'data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2048%2032'%20fill='none'><circle%20cx='10'%20cy='24'%20r='7'%20stroke='currentColor'%20stroke-width='2.2'%20fill='none'/><circle%20cx='10'%20cy='24'%20r='2.2'%20fill='currentColor'/><circle%20cx='37'%20cy='24'%20r='7'%20stroke='currentColor'%20stroke-width='2.2'%20fill='none'/><circle%20cx='37'%20cy='24'%20r='2.2'%20fill='currentColor'/><path%20d='M10%2C24%20Q11%2C16%2018%2C14%20Q24%2C12%2030%2C13%20Q35%2C14%2037%2C24'%20stroke='currentColor'%20stroke-width='2'%20fill='none'/><path%20d='M16%2C14%20Q22%2C10%2028%2C12'%20stroke='currentColor'%20stroke-width='2.8'%20stroke-linecap='round'%20fill='none'/><line%20x1='37'%20y1='17'%20x2='33'%20y2='11'%20stroke='currentColor'%20stroke-width='2'%20stroke-linecap='round'/><circle%20cx='40'%20cy='12'%20r='3.5'%20stroke='currentColor'%20stroke-width='1.8'%20fill='none'/><circle%20cx='40'%20cy='12'%20r='1.5'%20fill='currentColor'%20opacity='0.5'/><path%20d='M32%2C9%20Q35%2C7%2038%2C8'%20stroke='currentColor'%20stroke-width='2'%20fill='none'%20stroke-linecap='round'/><ellipse%20cx='21'%20cy='18'%20rx='5'%20ry='4'%20fill='currentColor'%20opacity='0.35'/><path%20d='M16%2C21%20Q12%2C23%208%2C24'%20stroke='currentColor'%20stroke-width='1.5'%20fill='none'%20stroke-linecap='round'/></svg>' : 'data:image/svg+xml,<svg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2048%2032'%20fill='none'><circle%20cx='10'%20cy='24'%20r='7'%20stroke='currentColor'%20stroke-width='2.2'%20fill='none'/><circle%20cx='10'%20cy='24'%20r='2.2'%20fill='currentColor'/><circle%20cx='38'%20cy='24'%20r='7'%20stroke='currentColor'%20stroke-width='2.2'%20fill='none'/><circle%20cx='38'%20cy='24'%20r='2.2'%20fill='currentColor'/><polyline%20points='10%2C24%2012%2C15%2022%2C13%2028%2C10%2036%2C12%2038%2C24'%20stroke='currentColor'%20stroke-width='2'%20fill='none'%20stroke-linejoin='round'/><line%20x1='18'%20y1='13'%20x2='28'%20y2='10'%20stroke='currentColor'%20stroke-width='2.5'%20stroke-linecap='round'/><line%20x1='38'%20y1='17'%20x2='33'%20y2='10'%20stroke='currentColor'%20stroke-width='2'%20stroke-linecap='round'/><line%20x1='30'%20y1='8'%20x2='36'%20y2='9'%20stroke='currentColor'%20stroke-width='2'%20stroke-linecap='round'/><rect%20x='16'%20y='15'%20width='10'%20height='7'%20rx='1'%20fill='currentColor'%20opacity='0.4'/><path%20d='M16%2C20%20Q10%2C22%208%2C24'%20stroke='currentColor'%20stroke-width='1.5'%20fill='none'%20stroke-linecap='round'/></svg>';
+    const icon = '<img src="' + iconSrc + '" width="38" height="26" style="display:block;opacity:0.85" alt=""/>';
     return `
       <div class="cat-card" onclick="showClasifFor('${encodeURIComponent(name)}','${encodeURIComponent(sel)}')">
         <div class="cat-card-icon">${icon}</div>
