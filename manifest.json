@@ -1,6 +1,6 @@
 {
-  "name": "Clasificación Enduro",
-  "short_name": "Clasificación",
+  "name": "Enduro Revolution",
+  "short_name": "Enduro Revolution",
   "description": "Clasificación en vivo de la prueba de enduro",
   "start_url": "./",
   "display": "standalone",
