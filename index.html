@@ -163,6 +163,36 @@ font-size:0.65rem;color:var(--dim)}
   font-size:1.25rem;font-weight:700;padding:0.25rem 0.6rem;border-radius:8px;
   cursor:pointer;transition:background .15s;line-height:1}
 .nav-btn:hover{background:var(--panel)}
+.archive-btn{display:flex;align-items:center;justify-content:center;gap:6px;
+  background:linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(168,85,247,0.08) 100%);
+  border:1px solid rgba(168,85,247,0.4);color:#c084fc;
+  padding:10px 14px;border-radius:10px;cursor:pointer;font-family:inherit;
+  font-size:0.78rem;font-weight:600;margin:8px 12px 12px 12px;width:calc(100% - 24px);
+  transition:all .15s}
+.archive-btn:hover{background:linear-gradient(135deg, rgba(168,85,247,0.22) 0%, rgba(168,85,247,0.12) 100%)}
+.archive-year-header{padding:10px 14px 4px;font-size:0.68rem;font-weight:700;
+  color:var(--dim);letter-spacing:0.08em;text-transform:uppercase}
+.archive-race-item{display:flex;align-items:center;gap:10px;padding:12px 14px;
+  background:var(--panel);border:1px solid var(--border);margin:0 12px 6px;
+  border-radius:8px;cursor:pointer;transition:all .15s}
+.archive-race-item:hover{background:var(--panel-hover,rgba(255,255,255,0.05))}
+.archive-race-date{font-family:monospace;font-size:0.7rem;color:var(--cyan);font-weight:700;flex-shrink:0;min-width:75px}
+.archive-race-info{flex:1;min-width:0}
+.archive-race-name{font-size:0.82rem;font-weight:600;color:var(--fg);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.archive-race-meta{font-size:0.62rem;color:var(--dim);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.archive-race-arrow{color:var(--dim);font-size:1rem;flex-shrink:0}
+.live-banner{position:sticky;top:0;z-index:100;background:rgba(34,197,94,0.12);
+  border-bottom:1px solid rgba(34,197,94,0.4);padding:8px 12px;
+  font-size:0.7rem;color:var(--green);display:flex;align-items:center;gap:8px}
+.archive-banner{position:sticky;top:0;z-index:100;background:rgba(168,85,247,0.12);
+  border-bottom:1px solid rgba(168,85,247,0.4);padding:8px 12px;
+  font-size:0.7rem;color:#c084fc;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.archive-banner button{background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);
+  color:var(--green);padding:4px 10px;border-radius:5px;cursor:pointer;
+  font-family:inherit;font-size:0.65rem;font-weight:600}
+.archive-empty{padding:30px 16px;text-align:center;color:var(--dim);font-size:0.8rem;line-height:1.5}
 </style>
 </head>
 <body>
@@ -186,10 +216,14 @@ font-size:0.65rem;color:var(--dim)}
 
 <!-- VIEW: Category list -->
 <div class="view active" id="vCats">
+  <div id="liveBannerSlot"></div>
   <div id="tabBar" class="tab-bar" style="display:none"></div>
   <div class="cat-list" id="catList">
     <div class="loading"><div class="spinner"></div> Cargando…</div>
   </div>
+  <button class="archive-btn" id="btnArchive" onclick="showArchive()" style="display:none">
+    📅 Ver histórico de pruebas
+  </button>
 </div>
 
 <!-- VIEW: Classification list -->
@@ -208,6 +242,13 @@ font-size:0.65rem;color:var(--dim)}
 <div class="view" id="vDetail">
   <div class="detail-view" id="detailContent">
     <button class="back-btn" onclick="showClasif()">← Clasificación</button>
+  </div>
+</div>
+
+<!-- VIEW: Archive list -->
+<div class="view" id="vArchive">
+  <div id="archiveList">
+    <div class="loading"><div class="spinner"></div> Cargando histórico…</div>
   </div>
 </div>
 
@@ -234,7 +275,10 @@ const POLL_MS_HIDDEN  = 30000;  // cada 30s en segundo plano (ahorra batería)
 
 // ── Estado ────────────────────────────────────────────────────────────────
 let gData = null;
-let gView = 'cats';    // cats | clasif | detail
+let gView = 'cats';    // cats | clasif | detail | archive
+let gArchiveIndex = null;   // {races: [{path, name, date, year, ...}]}
+let gViewingArchive = null; // Si estamos viendo una carrera archivada: {path, name, date}
+let gLiveDataBackup = null; // Backup de los datos en vivo mientras miras archivo
 let gCatSel = null;    // nombre de categoría o "scratch" o "tv:LABEL"
 let gPilotId = null;
 let gLastEtag = null;
@@ -477,10 +521,177 @@ function renderAll() {
   document.getElementById('hTitle').textContent = cfg.name || 'Clasificación en Vivo';
   document.getElementById('hRace').textContent = cfg.date || '';
   renderTabBar();
+  renderLiveBanner();
+  renderArchiveButton();
   if (gView === 'cats') renderCatList();
   else if (gView === 'clasif') renderClasif();
   else if (gView === 'detail') renderDetail();
+  else if (gView === 'archive') renderArchiveList();
 }
+
+function renderLiveBanner() {
+  const slot = document.getElementById('liveBannerSlot');
+  if (!slot) return;
+  if (gViewingArchive) {
+    slot.innerHTML = '<div class="archive-banner">' +
+      '<span>📦 Viendo histórico: <b>' + escapeHtml(gViewingArchive.name || 'Prueba archivada') + '</b>' +
+      (gViewingArchive.date ? ' · ' + gViewingArchive.date : '') + '</span>' +
+      '<button onclick="returnToLive()">↩ Volver a en vivo</button></div>';
+  } else {
+    slot.innerHTML = '';
+  }
+}
+
+function renderArchiveButton() {
+  const btn = document.getElementById('btnArchive');
+  if (!btn) return;
+  // Mostrar solo si podemos deducir la URL del índice del archivo y no estamos ya viendo archivo
+  btn.style.display = (canFetchArchive() && !gViewingArchive) ? 'flex' : 'none';
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Deriva la URL base del archivo a partir de la URL de los datos en vivo
+function getArchiveBaseUrl() {
+  // gCurrentUrl puede ser algo como:
+  //   https://raw.githubusercontent.com/USER/REPO/main/live.json
+  //   ./live.json
+  //   https://user.github.io/repo/live.json
+  const url = gCurrentUrl || '';
+  if (url.endsWith('live.json')) return url.slice(0, -'live.json'.length);
+  if (url.endsWith('/')) return url;
+  const last = url.lastIndexOf('/');
+  if (last > 0) return url.slice(0, last + 1);
+  return './';
+}
+
+function canFetchArchive() {
+  // Solo si tenemos una URL razonable y el servidor puede tener el índice
+  return !!getArchiveBaseUrl();
+}
+
+async function fetchArchiveIndex() {
+  const baseUrl = getArchiveBaseUrl();
+  const indexUrl = baseUrl + 'archivo/index.json?_=' + Date.now();
+  try {
+    const resp = await fetch(indexUrl);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    gArchiveIndex = data;
+    return data;
+  } catch (e) {
+    gArchiveIndex = { races: [], error: e.message };
+    return gArchiveIndex;
+  }
+}
+
+async function showArchive(pushState = true) {
+  gView = 'archive';
+  showView('vArchive');
+  const container = document.getElementById('archiveList');
+  container.innerHTML = '<div class="loading"><div class="spinner"></div> Cargando histórico…</div>';
+  if (pushState) history.pushState({view:'archive'}, '', '');
+  await fetchArchiveIndex();
+  renderArchiveList();
+}
+
+function renderArchiveList() {
+  const container = document.getElementById('archiveList');
+  if (!container) return;
+  const idx = gArchiveIndex;
+  if (!idx) {
+    container.innerHTML = '<div class="archive-empty">Cargando…</div>';
+    return;
+  }
+  const races = idx.races || [];
+  if (!races.length) {
+    if (idx.error) {
+      container.innerHTML = '<div class="archive-empty">No se pudo cargar el histórico.<br>' +
+        '<span style="font-size:0.7rem">' + escapeHtml(idx.error) + '</span></div>';
+    } else {
+      container.innerHTML = '<div class="archive-empty">Aún no hay pruebas archivadas.</div>';
+    }
+    return;
+  }
+  // Agrupar por año
+  const byYear = {};
+  races.forEach(r => {
+    const y = r.year || (r.date ? r.date.slice(0,4) : 'Sin año');
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(r);
+  });
+  const years = Object.keys(byYear).sort().reverse();
+  let html = '<button class="back-btn" onclick="showCats()" style="margin:12px">← Volver</button>';
+  years.forEach(y => {
+    html += '<div class="archive-year-header">' + escapeHtml(y) + '</div>';
+    byYear[y].forEach(r => {
+      const dateStr = r.date ? r.date.split('-').reverse().join('/') : '';
+      const champs = (r.campeonatos || []).join(' · ');
+      const meta = [
+        r.riders ? r.riders + ' pilotos' : '',
+        r.organizer || '',
+        champs
+      ].filter(Boolean).join(' · ');
+      html += '<div class="archive-race-item" onclick="loadArchivedRace(' + JSON.stringify(r.path).replace(/"/g,'&quot;') + ')">' +
+        '<div class="archive-race-date">' + escapeHtml(dateStr) + '</div>' +
+        '<div class="archive-race-info">' +
+          '<div class="archive-race-name">' + escapeHtml(r.name || 'Prueba') + '</div>' +
+          (meta ? '<div class="archive-race-meta">' + escapeHtml(meta) + '</div>' : '') +
+        '</div>' +
+        '<div class="archive-race-arrow">›</div>' +
+      '</div>';
+    });
+  });
+  container.innerHTML = html;
+}
+
+async function loadArchivedRace(path) {
+  const baseUrl = getArchiveBaseUrl();
+  const url = baseUrl + path + '?_=' + Date.now();
+  showToast('Cargando…');
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const raceData = await resp.json();
+    // Backup de datos en vivo si no lo teníamos ya
+    if (!gViewingArchive && gData) gLiveDataBackup = gData;
+    gData = raceData;
+    gViewingArchive = {
+      path,
+      name: raceData.config?.name || '',
+      date: raceData.config?.date || ''
+    };
+    // Parar polling de datos en vivo mientras miramos archivo
+    if (gPollTimer) { clearInterval(gPollTimer); gPollTimer = null; }
+    gView = 'cats';
+    showView('vCats');
+    renderAll();
+    history.pushState({view:'cats', archive:path}, '', '');
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  }
+}
+
+function returnToLive() {
+  gViewingArchive = null;
+  if (gLiveDataBackup) {
+    gData = gLiveDataBackup;
+    gLiveDataBackup = null;
+  }
+  // Reanudar polling
+  schedulePoll();
+  fetchData();
+  gView = 'cats';
+  showView('vCats');
+  renderAll();
+  // Navegar al estado raíz
+  history.pushState({view:'cats'}, '', '');
+}
+
 
 function renderTabBar() {
   const cfg = gData.config || {};
@@ -771,7 +982,7 @@ function renderDetail() {
 
 // ── Navigation con History API ─────────────────────────────────────────────
 function updateNavButtons() {
-  const onCats = gView === 'cats';
+  const onCats = gView === 'cats' && !gViewingArchive;
   document.getElementById('btnBack').style.display = onCats ? 'none' : 'inline-block';
   document.getElementById('btnHome').style.display = onCats ? 'none' : 'inline-block';
 }
@@ -802,20 +1013,23 @@ function navBack() {
 }
 
 function navHome() {
-  // Ir al inicio: volver tantos pasos como sea necesario
+  // Si estamos viendo un archivo, volver a en vivo directamente
+  if (gViewingArchive) { returnToLive(); return; }
   if (gView === 'detail') history.go(-2);
   else if (gView === 'clasif') history.go(-1);
+  else if (gView === 'archive') history.go(-1);
 }
 
 // Hardware back button (Android)
 window.addEventListener('popstate', (e) => {
   const state = e.state || {};
   const dest = state.view || 'cats';
-  if (dest === 'detail') {
+  if (dest === 'archive') {
+    showArchive(false);
+  } else if (dest === 'detail') {
     if (state.pid) gPilotId = state.pid;
     showDetail(gPilotId, false);
   } else if (dest === 'clasif') {
-    // Restaurar tanto el nombre de categoría como el filtro
     if (state.catName !== undefined) window._clasifCat = state.catName;
     if (state.catSel !== undefined) gCatSel = state.catSel;
     showClasif(false);

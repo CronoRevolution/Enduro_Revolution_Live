@@ -3,7 +3,7 @@
 //  - HTML, CSS, JS del shell: cache-first (la app se cargue offline tras primera visita)
 //  - live.json: network-first con fallback a caché (permite ver últimos datos si se pierde red)
 
-const CACHE_NAME = "enduro-clasif-v2";
+const CACHE_NAME = "enduro-clasif-v3";
 const SHELL = ["./", "./index.html", "./manifest.json"];
 
 self.addEventListener("install", event => {
