@@ -1,0 +1,16 @@
+{
+  "races": [
+    {
+      "path": "archivo/2026/2026-03-01-enduro-branuelas-2026.json",
+      "name": "Enduro Brañuelas 2026",
+      "date": "2026-03-01",
+      "year": "2026",
+      "organizer": "",
+      "campeonatos": [
+        "Campeonato de Enduro de Castilla y León"
+      ],
+      "riders": 41,
+      "archivedAt": "2026-04-24T08:34:39.557Z"
+    }
+  ]
+}
