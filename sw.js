@@ -1,79 +1,42 @@
 // Service Worker — Enduro Revolution Clasificación Móvil
-// Estrategia revisada para evitar problemas de caché persistente:
-//  - HTML/manifest: NETWORK-FIRST con fallback a caché (detecta actualizaciones inmediatamente)
-//  - live.json, index.json, archivo/: NETWORK-FIRST (siempre datos frescos)
-//  - Iconos y otros assets estáticos: CACHE-FIRST (para no saturar la red)
+// v5: SW simplificado al máximo. La caché de navegador estándar ya hace el trabajo bien.
+//     El SW solo existe para que sea una PWA instalable.
+//     No interceptamos nada (pasa-todo), así no hay caché interna que pueda quedarse vieja.
 
-const CACHE_NAME = "enduro-clasif-v4";
-const SHELL = ["./", "./index.html", "./manifest.json"];
+const VERSION = "v5";
 
 self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).catch(() => {})
-  );
-  // Forzar activación inmediata (sin esperar a que se cierren las pestañas antiguas)
+  // Forzar activación inmediata
   self.skipWaiting();
 });
 
 self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-    )).then(() => self.clients.claim())
+    (async () => {
+      // Borrar TODAS las cachés anteriores sin excepción
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+      // Reclamar control inmediato de todas las pestañas abiertas
+      await self.clients.claim();
+      // Recargar todas las pestañas que el nuevo SW acaba de reclamar
+      const clients = await self.clients.matchAll({ type: "window" });
+      clients.forEach(client => {
+        try { client.navigate(client.url); } catch (e) {}
+      });
+    })()
   );
 });
 
+// Pasa-todo: no interceptamos nada. El navegador usa su caché HTTP normal,
+// que respeta los headers Cache-Control que envía GitHub Pages (~10 min para HTML).
+// Esto es MUCHO más fiable que intentar gestionar caché nosotros con un SW.
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+  // Sin event.respondWith() → el navegador maneja la petición de forma nativa
+});
 
-  const url = new URL(event.request.url);
-  const path = url.pathname;
-
-  // Datos vivos (live.json, index.json, archivo/*.json): network-first, sin caché
-  const isLiveData = path.endsWith("live.json")
-                  || path.endsWith("index.json")
-                  || path.includes("/archivo/")
-                  || url.hostname === "raw.githubusercontent.com";
-
-  if (isLiveData) {
-    event.respondWith(
-      fetch(event.request).then(resp => {
-        const copy = resp.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {});
-        return resp;
-      }).catch(() => caches.match(event.request))
-    );
-    return;
+// Mensaje de sanity para depurar
+self.addEventListener("message", event => {
+  if (event.data && event.data.type === "GET_VERSION") {
+    event.ports[0]?.postMessage({ version: VERSION });
   }
-
-  // HTML y manifest: network-first con fallback a caché
-  const isShell = path.endsWith(".html")
-               || path.endsWith("/")
-               || path.endsWith("manifest.json")
-               || path.endsWith("sw.js");
-
-  if (isShell) {
-    event.respondWith(
-      fetch(event.request).then(resp => {
-        // Solo cachear respuestas OK
-        if (resp.ok) {
-          const copy = resp.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {});
-        }
-        return resp;
-      }).catch(() => caches.match(event.request).then(c => c || caches.match("./")))
-    );
-    return;
-  }
-
-  // Otros (iconos, etc.): cache-first
-  event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request).then(resp => {
-      if (resp.ok) {
-        const copy = resp.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {});
-      }
-      return resp;
-    }).catch(() => caches.match("./")))
-  );
 });

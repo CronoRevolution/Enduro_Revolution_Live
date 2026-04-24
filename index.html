@@ -178,7 +178,7 @@ font-size:0.65rem;color:var(--dim)}
 .archive-race-item:hover{background:var(--panel-hover,rgba(255,255,255,0.05))}
 .archive-race-date{font-family:monospace;font-size:0.7rem;color:var(--cyan);font-weight:700;flex-shrink:0;min-width:75px}
 .archive-race-info{flex:1;min-width:0}
-.archive-race-name{font-size:0.82rem;font-weight:600;color:var(--fg);
+.archive-race-name{font-size:0.82rem;font-weight:600;color:var(--text);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .archive-race-meta{font-size:0.62rem;color:var(--dim);margin-top:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -212,10 +212,10 @@ font-size:0.65rem;color:var(--dim)}
 .welcome-card.archive:hover{background:linear-gradient(135deg,rgba(168,85,247,0.18) 0%,rgba(168,85,247,0.08) 100%)}
 .welcome-card-header{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .welcome-card-icon{font-size:1.6rem;flex-shrink:0}
-.welcome-card-title{font-size:1rem;font-weight:700;color:var(--fg);flex:1;min-width:0}
+.welcome-card-title{font-size:1rem;font-weight:700;color:var(--text);flex:1;min-width:0}
 .welcome-card.current .welcome-card-title{color:#ff6666}
 .welcome-card.archive .welcome-card-title{color:#c084fc}
-.welcome-card-race{font-size:0.82rem;color:var(--fg);font-weight:600;
+.welcome-card-race{font-size:0.82rem;color:var(--text);font-weight:600;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
 .welcome-card-meta{font-size:0.68rem;color:var(--dim);margin-top:3px;line-height:1.4}
 .welcome-card-arrow{align-self:flex-end;font-size:1rem;color:var(--dim);margin-top:8px}
@@ -266,7 +266,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v2.4 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v2.6 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -1164,42 +1164,94 @@ document.addEventListener('visibilitychange', () => {
   schedulePoll();
 });
 
-// ── Service Worker registration (PWA) ──────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(registration => {
-      // Si hay un SW esperando (nueva versión descargada), recargar automáticamente
-      if (registration.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
-      // Buscar actualizaciones periódicamente (cada 5 min) para no depender solo de F5
-      setInterval(() => {
-        registration.update().catch(() => {});
-      }, 5 * 60 * 1000);
-      // Detectar nuevo SW instalado: avisar silenciosamente y refrescar
-      registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing;
-        if (!newWorker) return;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // Nueva versión lista — mostrar toast discreto y recargar tras breve pausa
-            showToast('🔄 Nueva versión disponible, actualizando…');
-            setTimeout(() => window.location.reload(), 1500);
-          }
-        });
+// ── Service Worker (PWA) ───────────────────────────────────────────────────
+// Estrategia v2.5: SW simplificado (pasa-todo) + limpieza activa de cachés viejas.
+// Esto resuelve el problema crónico de dispositivos atascados en versiones antiguas.
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+
+  // PASO 1: Borrar AGRESIVAMENTE toda caché del navegador de esta app
+  //         (no la del SW — esa la borra él al activarse, sino la Cache API).
+  if ('caches' in window) {
+    caches.keys().then(keys => {
+      keys.forEach(k => {
+        // Borramos todas las cachés cuyo nombre empiece por "enduro-"
+        if (k.startsWith('enduro-')) caches.delete(k).catch(() => {});
       });
-    }).catch(err => {
-      console.warn('SW registration failed (probablemente file://):', err.message);
-    });
-    // Recargar la pestaña si el controlador del SW cambia (indica nueva activación)
-    let refreshing = false;
+    }).catch(() => {});
+  }
+
+  window.addEventListener('load', () => {
+    // PASO 2: Registrar el SW nuevo. Si ya existe, update() fuerza comprobación.
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        reg.update().catch(() => {});
+        // Cada vez que el usuario vuelva a la pestaña, comprobar actualización
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+      })
+      .catch(err => console.warn('SW registration failed:', err.message));
+
+    // PASO 3: Recargar cuando el control del SW cambie
+    let refreshed = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
+      if (refreshed) return;
+      refreshed = true;
       window.location.reload();
     });
   });
+})();
+
+// ── Detección de build obsoleto vs servidor ────────────────────────────────
+// Aparte del SW, hacemos una comprobación periódica: si el HTML del servidor
+// tiene una versión distinta a la nuestra, ofrecemos recargar.
+const LOCAL_BUILD = 'v2.6';
+async function checkForNewerBuild() {
+  try {
+    // Fetch bypassing all caches
+    const resp = await fetch(location.pathname + '?v=' + Date.now(), {
+      cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }
+    });
+    if (!resp.ok) return;
+    const txt = await resp.text();
+    const m = txt.match(/v(\d+\.\d+)\s*·\s*Enduro Revolution/);
+    if (m && m[0] && !m[0].includes(LOCAL_BUILD)) {
+      // Hay build más nueva en el servidor
+      showUpdateBanner(m[0]);
+    }
+  } catch (e) { /* sin red, ignorar */ }
 }
+function showUpdateBanner(serverBuild) {
+  if (document.getElementById('updateBanner')) return;
+  const bar = document.createElement('div');
+  bar.id = 'updateBanner';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#4eff4e;color:#000;' +
+    'padding:10px 14px;font-size:0.78rem;font-weight:700;z-index:9999;display:flex;' +
+    'align-items:center;gap:10px;box-shadow:0 -2px 10px rgba(0,0,0,0.4)';
+  bar.innerHTML = '<span style="flex:1">🔄 Nueva versión disponible</span>' +
+    '<button style="background:#000;color:#4eff4e;border:0;padding:6px 12px;border-radius:4px;' +
+    'font-weight:700;font-family:inherit;font-size:0.78rem;cursor:pointer">Actualizar</button>';
+  bar.querySelector('button').onclick = async () => {
+    // Desregistrar SW y limpiar cachés antes de recargar
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    window.location.reload();
+  };
+  document.body.appendChild(bar);
+}
+// Comprobar al cargar y cada 2 minutos
+setTimeout(checkForNewerBuild, 5000);
+setInterval(checkForNewerBuild, 2 * 60 * 1000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') checkForNewerBuild();
+});
 </script>
 </body>
 </html>
