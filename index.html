@@ -266,7 +266,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v2.3 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v2.4 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -569,15 +569,16 @@ function buildResults(schedule, cfg, timing, stageData) {
 
 // ── Render ────────────────────────────────────────────────────────────────
 function renderAll() {
-  if (!gData) return;
-  const cfg = gData.config || {};
-  // En welcome, el header muestra el branding de bienvenida
+  const cfg = (gData && gData.config) || {};
+  // En welcome, el header muestra el branding de bienvenida.
+  // No requiere gData para mostrarse.
   if (gView === 'welcome') {
     document.getElementById('hTitle').textContent = 'Enduro Revolution';
     document.getElementById('hRace').textContent = 'Selecciona una opción';
     renderWelcome();
     return;
   }
+  if (!gData) return;
   document.getElementById('hTitle').textContent = cfg.name || 'Clasificación en Vivo';
   document.getElementById('hRace').textContent = cfg.date || '';
   renderTabBar();
@@ -1142,14 +1143,19 @@ function schedulePoll() {
   gPollTimer = setInterval(fetchData, ms);
 }
 
+// Forzar que la vista activa inicial sea welcome (en caso de que el HTML cacheado tenga otra)
+document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+const vw = document.getElementById('vWelcome');
+if (vw) vw.classList.add('active');
+gView = 'welcome';
+renderWelcome();
+updateNavButtons();
+
 fetchData();
 schedulePoll();
 gAgeTimer = setInterval(updateAge, 1000); // actualizar "hace Xs" cada segundo
-// Estado inicial: ponemos 'cats' como base del historial
-// Añadimos un estado extra vacío para que el primer "atrás" vuelva a cats
-// en lugar de salir de la app
+// Estado inicial del historial en welcome
 history.replaceState({view:'welcome'}, '', '');
-// Empujar un estado dummy al principio para absorber el primer swipe atrás del sistema
 history.pushState({view:'welcome'}, '', '');
 
 // Refresh on tab focus
@@ -1161,8 +1167,36 @@ document.addEventListener('visibilitychange', () => {
 // ── Service Worker registration (PWA) ──────────────────────────────────────
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(err => {
+    navigator.serviceWorker.register('./sw.js').then(registration => {
+      // Si hay un SW esperando (nueva versión descargada), recargar automáticamente
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+      // Buscar actualizaciones periódicamente (cada 5 min) para no depender solo de F5
+      setInterval(() => {
+        registration.update().catch(() => {});
+      }, 5 * 60 * 1000);
+      // Detectar nuevo SW instalado: avisar silenciosamente y refrescar
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // Nueva versión lista — mostrar toast discreto y recargar tras breve pausa
+            showToast('🔄 Nueva versión disponible, actualizando…');
+            setTimeout(() => window.location.reload(), 1500);
+          }
+        });
+      });
+    }).catch(err => {
       console.warn('SW registration failed (probablemente file://):', err.message);
+    });
+    // Recargar la pestaña si el controlador del SW cambia (indica nueva activación)
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
     });
   });
 }
