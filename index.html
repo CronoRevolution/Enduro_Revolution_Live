@@ -193,6 +193,10 @@ font-size:0.65rem;color:var(--dim)}
   color:var(--green);padding:4px 10px;border-radius:5px;cursor:pointer;
   font-family:inherit;font-size:0.65rem;font-weight:600}
 .archive-empty{padding:30px 16px;text-align:center;color:var(--dim);font-size:0.8rem;line-height:1.5}
+.stale-banner{margin:8px 12px 0;padding:8px 12px;background:rgba(245,158,11,0.12);
+  border:1px solid rgba(245,158,11,0.4);border-radius:8px;font-size:0.72rem;
+  color:var(--amber);display:flex;align-items:center;gap:8px;line-height:1.3}
+.stale-banner.offline{background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.4);color:var(--red)}
 .welcome{padding:24px 16px;display:flex;flex-direction:column;gap:14px;min-height:100%}
 .welcome-logo{text-align:center;padding:18px 0 8px}
 .welcome-title{font-size:1.4rem;font-weight:900;color:#fff;letter-spacing:0.05em;
@@ -266,7 +270,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v2.6 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v2.7 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -357,11 +361,16 @@ document.addEventListener('DOMContentLoaded', applyTheme);
 // Also apply immediately if DOM already loaded (inline script)
 if (document.readyState !== 'loading') applyTheme();
 
+let gFetchController = null;
 async function fetchData() {
+  // Abortar fetch anterior si seguía en curso
+  if (gFetchController) { try { gFetchController.abort(); } catch (e) {} }
+  gFetchController = new AbortController();
+  const signal = gFetchController.signal;
   try {
     const headers = {};
     if (gLastEtag) headers['If-None-Match'] = gLastEtag;
-    const resp = await fetch(gCurrentUrl + '?_=' + Date.now(), { headers });
+    const resp = await fetch(gCurrentUrl + '?_=' + Date.now(), { headers, signal });
     if (resp.status === 304) { gLastFetchTs = Date.now(); gFailStreak = 0; setStatus('live'); updateAge(); return; }
     if (!resp.ok) throw new Error(resp.status);
     gLastEtag = resp.headers.get('ETag');
@@ -377,6 +386,7 @@ async function fetchData() {
       showToast('✓ Actualizado');
     }
   } catch(e) {
+    if (e.name === 'AbortError') return;
     gFailStreak++;
     // Tras 3 fallos consecutivos con la URL primaria, probar el fallback
     if (gFailStreak >= 3 && DATA_URL_FALLBACK && gCurrentUrl !== DATA_URL_FALLBACK) {
@@ -400,6 +410,10 @@ function setStatus(s) {
 }
 
 function updateAge() {
+  // También actualizar banner de "datos antiguos" si estamos en cats view
+  if (gView === 'cats' && typeof renderStaleBanner === 'function') {
+    try { renderStaleBanner(); } catch(e) {}
+  }
   const a = document.getElementById('statusAge');
   if (!a) return;
   if (!gLastFetchTs) { a.textContent = '—'; return; }
@@ -583,7 +597,7 @@ function renderAll() {
   document.getElementById('hRace').textContent = cfg.date || '';
   renderTabBar();
   renderLiveBanner();
-  if (gView === 'cats') renderCatList();
+  if (gView === 'cats') { renderCatList(); renderStaleBanner(); }
   else if (gView === 'clasif') renderClasif();
   else if (gView === 'detail') renderDetail();
   else if (gView === 'archive') renderArchiveList();
@@ -601,6 +615,8 @@ function renderWelcome() {
 }
 
 function enterCurrent() {
+  // Abortar cualquier carga de archivo en curso
+  if (gArchiveController) { try { gArchiveController.abort(); } catch (e) {} }
   // Si estábamos viendo un archivo, restaurar los datos en vivo primero
   if (gViewingArchive) {
     gViewingArchive = null;
@@ -673,16 +689,21 @@ function canFetchArchive() {
   return !!getArchiveBaseUrl();
 }
 
+let gIndexController = null;
 async function fetchArchiveIndex() {
   const baseUrl = getArchiveBaseUrl();
   const indexUrl = baseUrl + 'archivo/index.json?_=' + Date.now();
+  // Abortar fetch anterior del índice si seguía en curso
+  if (gIndexController) { try { gIndexController.abort(); } catch (e) {} }
+  gIndexController = new AbortController();
   try {
-    const resp = await fetch(indexUrl);
+    const resp = await fetch(indexUrl, { signal: gIndexController.signal });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     gArchiveIndex = data;
     return data;
   } catch (e) {
+    if (e.name === 'AbortError') return null;
     gArchiveIndex = { races: [], error: e.message };
     return gArchiveIndex;
   }
@@ -748,12 +769,16 @@ function renderArchiveList() {
   container.innerHTML = html;
 }
 
+let gArchiveController = null;
 async function loadArchivedRace(path) {
   const baseUrl = getArchiveBaseUrl();
   const url = baseUrl + path + '?_=' + Date.now();
   showToast('Cargando…');
+  // Abortar carga anterior si seguía en curso
+  if (gArchiveController) { try { gArchiveController.abort(); } catch (e) {} }
+  gArchiveController = new AbortController();
   try {
-    const resp = await fetch(url);
+    const resp = await fetch(url, { signal: gArchiveController.signal });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const raceData = await resp.json();
     // Backup de datos en vivo si no lo teníamos ya
@@ -771,6 +796,7 @@ async function loadArchivedRace(path) {
     renderAll();
     history.pushState({view:'cats', archive:path}, '', '');
   } catch (e) {
+    if (e.name === 'AbortError') return; // navegación cambió, no es error
     showToast('Error: ' + e.message);
   }
 }
@@ -812,6 +838,48 @@ function switchTab(sel) {
   gCatSel = sel;
   renderTabBar();
   renderCatList();
+}
+
+function renderStaleBanner() {
+  // Buscar/crear el contenedor del banner dentro de vCats
+  const view = document.getElementById('vCats');
+  if (!view) return;
+  let banner = document.getElementById('staleBanner');
+  // Datos antiguos (>5 min sin actualizar) o fallos consecutivos
+  const ageSec = gLastFetchTs ? (Date.now() - gLastFetchTs) / 1000 : Infinity;
+  const isStale = ageSec > 300; // 5 min
+  const isOffline = gFailStreak >= 3;
+  // Si vemos histórico, no mostrar este banner (sería confuso)
+  if (gViewingArchive) {
+    if (banner) banner.remove();
+    return;
+  }
+  if (!isStale && !isOffline) {
+    if (banner) banner.remove();
+    return;
+  }
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'staleBanner';
+    // Insertar tras liveBannerSlot, antes de tabBar
+    const slot = document.getElementById('liveBannerSlot');
+    if (slot && slot.parentNode) {
+      slot.parentNode.insertBefore(banner, slot.nextSibling);
+    } else {
+      view.insertBefore(banner, view.firstChild);
+    }
+  }
+  banner.className = 'stale-banner' + (isOffline ? ' offline' : '');
+  if (isOffline) {
+    banner.innerHTML = '⚠ Sin conexión con el servidor. Mostrando últimos datos conocidos. ' +
+      '<button onclick="fetchData()" style="background:transparent;border:1px solid currentColor;color:inherit;padding:2px 8px;border-radius:4px;font-family:inherit;font-size:inherit;cursor:pointer;margin-left:auto">Reintentar</button>';
+  } else {
+    let ageStr;
+    if (ageSec < 3600) ageStr = Math.floor(ageSec/60) + ' minutos';
+    else ageStr = Math.floor(ageSec/3600) + ' horas';
+    banner.innerHTML = '⏱ Datos de hace ' + ageStr + '. Comprueba tu conexión. ' +
+      '<button onclick="fetchData()" style="background:transparent;border:1px solid currentColor;color:inherit;padding:2px 8px;border-radius:4px;font-family:inherit;font-size:inherit;cursor:pointer;margin-left:auto">Actualizar</button>';
+  }
 }
 
 function renderCatList() {
@@ -1206,7 +1274,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Detección de build obsoleto vs servidor ────────────────────────────────
 // Aparte del SW, hacemos una comprobación periódica: si el HTML del servidor
 // tiene una versión distinta a la nuestra, ofrecemos recargar.
-const LOCAL_BUILD = 'v2.6';
+const LOCAL_BUILD = 'v2.7';
 async function checkForNewerBuild() {
   try {
     // Fetch bypassing all caches
