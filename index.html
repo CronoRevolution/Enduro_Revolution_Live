@@ -110,7 +110,7 @@ font-size:0.65rem;color:var(--dim)}
 .pr-info{flex:1;min-width:0}
 .pr-name{font-size:0.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pr-cat{font-size:0.65rem;color:var(--dim);margin-top:1px}
-.pr-right{text-align:right;flex-shrink:0}
+.pr-right{text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
 .pr-total{font-family:monospace;font-weight:800;font-size:0.9rem;color:var(--red)}
 .pr-diff{font-family:monospace;font-size:0.65rem;color:var(--dim)}
 .pr-status{font-size:0.72rem;font-weight:700;padding:0.15rem 0.45rem;border-radius:6px}
@@ -118,6 +118,19 @@ font-size:0.65rem;color:var(--dim)}
 .pr-status.dnf{background:rgba(251,191,36,0.15);color:var(--amber)}
 .pr-status.dsq{background:rgba(248,113,113,0.15);color:var(--red)}
 .pr-status.prog{background:rgba(34,211,238,0.1);color:var(--cyan)}
+.pr-lap{display:inline-flex;align-items:center;gap:3px;font-family:monospace;
+  font-weight:800;font-size:0.78rem;padding:0.15rem 0.5rem;border-radius:6px;
+  background:rgba(34,211,238,0.14);color:var(--cyan);
+  border:1px solid rgba(34,211,238,0.35);line-height:1;flex-shrink:0;letter-spacing:0.02em}
+.pr-lap.done{background:rgba(74,222,128,0.16);color:var(--green);border-color:rgba(74,222,128,0.4)}
+.pr-lap.start{background:rgba(148,163,184,0.15);color:var(--dim);border-color:rgba(148,163,184,0.3)}
+.pr-lap-frac{opacity:0.7;font-weight:600;font-size:0.7rem}
+.pr-laps-row{display:flex;align-items:center;gap:6px;margin-top:3px}
+.pr-laps-dots{display:flex;gap:3px;flex:1}
+.pr-laps-dots .d{flex:1;height:4px;border-radius:2px;background:rgba(148,163,184,0.18);min-width:6px;max-width:18px}
+.pr-laps-dots .d.ok{background:var(--cyan)}
+.pr-laps-dots .d.done{background:var(--green)}
+
 
 /* ── Pilot detail ── */
 .detail-view{padding:0.75rem;overflow:auto;height:calc(100vh - 56px)}
@@ -270,7 +283,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v2.9 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v3.0 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -1058,11 +1071,43 @@ function renderClasif() {
     }
     const podium = ok && pos <= 3 ? `podium-${pos}` : '';
     const posEl = ok ? (pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos+'°') : '—';
+
+    // Badge de vuelta — siempre visible para pilotos OK (ya hayan empezado o no).
+    // Verde si terminó todas las vueltas, cyan en curso, gris si aún no ha empezado.
+    const last = r.lastDoneLap || 0;
+    const nL = r.nL || 1;
+    let lapBadgeCls = 'pr-lap';
+    let lapBadgeContent;
+    if (r.status === 'dnf' || r.status === 'dsq') {
+      lapBadgeCls = '';
+      lapBadgeContent = '';
+    } else if (r.finished || last >= nL) {
+      lapBadgeCls += ' done';
+      lapBadgeContent = '<span>V' + nL + '</span><span class="pr-lap-frac">/' + nL + '</span>';
+    } else if (last === 0) {
+      lapBadgeCls += ' start';
+      lapBadgeContent = '<span>Salida</span>';
+    } else {
+      lapBadgeContent = '<span>V' + last + '</span><span class="pr-lap-frac">/' + nL + '</span>';
+    }
+    const lapBadge = lapBadgeContent ? '<span class="' + lapBadgeCls + '">' + lapBadgeContent + '</span>' : '';
+
+    // Tira de puntos: una por vuelta. Verde si todas hechas, cyan las hechas, gris las que faltan
+    let dotsHtml = '';
+    if (r.status !== 'dnf' && r.status !== 'dsq' && nL > 0) {
+      const dots = [];
+      for (let l = 1; l <= nL; l++) {
+        const cls = (l <= last) ? (r.finished || last >= nL ? 'done' : 'ok') : '';
+        dots.push('<div class="d ' + cls + '"></div>');
+      }
+      dotsHtml = '<div class="pr-laps-row"><div class="pr-laps-dots">' + dots.join('') + '</div></div>';
+    }
+
     const stEl = r.status === 'dnf' ? '<span class="pr-status dnf">DNF</span>'
                : r.status === 'dsq' ? '<span class="pr-status dsq">DSQ</span>'
                : r.finished ? '<span class="pr-status fin">✓ FIN</span>'
-               : r.stTotal > 0 ? '<span class="pr-status prog">En curso (V' + (r.lastDoneLap||0) + '/' + r.nL + ')</span>'
                : '';
+
     // Diferencia: solo cuando lleva las mismas vueltas que el líder. Si no, mostrar
     // "−N vlt" indicando cuántas vueltas tiene de retraso.
     let diff = '';
@@ -1079,8 +1124,10 @@ function renderClasif() {
         <div class="pr-info">
           <div class="pr-name">${r.fullName}</div>
           <div class="pr-cat">${r.categoria}${r.club ? ' · ' + r.club : ''}</div>
+          ${dotsHtml}
         </div>
         <div class="pr-right">
+          ${lapBadge}
           ${ok ? `<div class="pr-total">${fmtT(r.total)}</div><div class="pr-diff">${diff}</div>` : stEl}
         </div>
       </div>`;
@@ -1334,7 +1381,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Detección de build obsoleto vs servidor ────────────────────────────────
 // Aparte del SW, hacemos una comprobación periódica: si el HTML del servidor
 // tiene una versión distinta a la nuestra, ofrecemos recargar.
-const LOCAL_BUILD = 'v2.9';
+const LOCAL_BUILD = 'v3.0';
 async function checkForNewerBuild() {
   try {
     // Fetch bypassing all caches
