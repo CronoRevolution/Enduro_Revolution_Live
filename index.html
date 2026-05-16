@@ -270,7 +270,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v2.8 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v2.9 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -605,9 +605,22 @@ function buildResults(schedule, cfg, timing, stageData) {
     const penTotal = startPen + tcPen + manPen;
     const finished = rt.finished || false;
     const status = rt.status || 'ok';
+    // Última vuelta para la que existe al menos un crono registrado.
+    // Se cuenta una vuelta como "hecha" cuando hay tiempo en algún tramo de esa vuelta.
+    // Para ordenar correctamente en una carrera en curso: quien lleva más vueltas va por delante.
+    let lastDoneLap = 0;
+    for (let l = 1; l <= nL; l++) {
+      let hasAny = false;
+      for (let s = 1; s <= nS; s++) {
+        if (stTimes[`${s}-${l}`]) { hasAny = true; break; }
+      }
+      if (hasAny) lastDoneLap = l;
+      else break; // huecos rompen la racha
+    }
+    const allLapsDone = lastDoneLap >= nL;
     return { ...r, nL, nC, chPens, chActual, chExpected,
       startPen, manPen, tcPen, penTotal, stTimes, stTotal,
-      total: penTotal + stTotal, status, finished };
+      total: penTotal + stTotal, status, finished, lastDoneLap, allLapsDone };
   });
 }
 
@@ -1021,9 +1034,14 @@ function renderClasif() {
 
   results.sort((a, b) => {
     const aOk = a.status === 'ok' && !a.autoDsq, bOk = b.status === 'ok' && !b.autoDsq;
+    // Pilotos DSQ / DNF al final
     if (aOk && !bOk) return -1; if (!aOk && bOk) return 1;
     if (!aOk) return 0;
+    // Sin tiempo registrado al final del bloque OK
     if (a.stTotal > 0 && !b.stTotal) return -1; if (!a.stTotal && b.stTotal > 0) return 1;
+    // Más vueltas completadas = mejor posición (en carrera en curso)
+    if ((b.lastDoneLap||0) !== (a.lastDoneLap||0)) return (b.lastDoneLap||0) - (a.lastDoneLap||0);
+    // Mismas vueltas: menor tiempo = mejor
     return a.total - b.total;
   });
 
@@ -1031,17 +1049,28 @@ function renderClasif() {
   document.getElementById('clasifMeta').textContent =
     `${results.filter(r => r.stTotal > 0 && r.status === 'ok').length} finalizados · ${results.length} pilotos`;
 
-  let pos = 0, leader = null;
+  let pos = 0, leader = null, leaderLap = null;
   const html = results.map(r => {
     const ok = r.status === 'ok' && r.stTotal > 0;
-    if (ok) { pos++; if (leader === null) leader = r.total; }
+    if (ok) {
+      pos++;
+      if (leader === null) { leader = r.total; leaderLap = r.lastDoneLap||0; }
+    }
     const podium = ok && pos <= 3 ? `podium-${pos}` : '';
     const posEl = ok ? (pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos+'°') : '—';
     const stEl = r.status === 'dnf' ? '<span class="pr-status dnf">DNF</span>'
                : r.status === 'dsq' ? '<span class="pr-status dsq">DSQ</span>'
                : r.finished ? '<span class="pr-status fin">✓ FIN</span>'
-               : r.stTotal > 0 ? '<span class="pr-status prog">En curso</span>' : '';
-    const diff = ok && pos > 1 ? `+${fmtT(r.total - leader)}` : '';
+               : r.stTotal > 0 ? '<span class="pr-status prog">En curso (V' + (r.lastDoneLap||0) + '/' + r.nL + ')</span>'
+               : '';
+    // Diferencia: solo cuando lleva las mismas vueltas que el líder. Si no, mostrar
+    // "−N vlt" indicando cuántas vueltas tiene de retraso.
+    let diff = '';
+    if (ok && pos > 1) {
+      const lapDiff = leaderLap - (r.lastDoneLap||0);
+      if (lapDiff > 0) diff = '−' + lapDiff + ' vlt';
+      else diff = '+' + fmtT(r.total - leader);
+    }
     return `
       <div class="pilot-row ${podium} ${r.status === 'dnf' ? 'dnf' : r.status === 'dsq' ? 'dsq' : ''}"
            onclick="showDetail('${r.id}')">
@@ -1305,7 +1334,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Detección de build obsoleto vs servidor ────────────────────────────────
 // Aparte del SW, hacemos una comprobación periódica: si el HTML del servidor
 // tiene una versión distinta a la nuestra, ofrecemos recargar.
-const LOCAL_BUILD = 'v2.8';
+const LOCAL_BUILD = 'v2.9';
 async function checkForNewerBuild() {
   try {
     // Fetch bypassing all caches
