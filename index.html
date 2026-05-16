@@ -270,7 +270,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v2.7 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v2.8 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -317,14 +317,43 @@ font-size:0.65rem;color:var(--dim)}
 // Si quieres apuntar a otro sitio, cambia DATA_URL:
 // DATA_URL: usa el hash de la URL para sobreescribir, p.ej.:
 // index.html#https://usuario.github.io/repo/live.json
-// URL primaria (desde el hash) y fallback (github.io relativo) en caso de fallo
-const DATA_URL_PRIMARY = (window.location.hash && window.location.hash.length > 1)
-  ? window.location.hash.slice(1)
-  : './live.json';
-// Si la primaria es raw.githubusercontent.com, usa github.io como fallback
-const DATA_URL_FALLBACK = DATA_URL_PRIMARY.includes("raw.githubusercontent.com")
-  ? './live.json'
-  : null;
+//   o bien:  index.html#https://raw.githubusercontent.com/usuario/repo/main/live.json
+//
+// Cadena de URLs en orden de preferencia, con caché creciente:
+//   1. cdn.statically.io  — caché ~1 min  (la mejor para inmediatez)
+//   2. raw.githubusercontent.com — caché ~5 min
+//   3. github.io / URL del hash original — último recurso
+const HASH_URL = (window.location.hash && window.location.hash.length > 1)
+  ? window.location.hash.slice(1) : null;
+
+// Intentar extraer USER/REPO del hash si viene como raw o github.io
+function deriveUserRepo(url) {
+  if (!url) return null;
+  // raw.githubusercontent.com/USER/REPO/main/live.json
+  let m = url.match(/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/[^/]+\/live\.json/);
+  if (m) return { user: m[1], repo: m[2] };
+  // USER.github.io/REPO/[live.json]
+  m = url.match(/([^/.]+)\.github\.io\/([^/?#]+)/);
+  if (m) return { user: m[1], repo: m[2] };
+  return null;
+}
+
+const _userRepo = deriveUserRepo(HASH_URL);
+const DATA_URL_LIST = [];
+if (_userRepo) {
+  // Statically: caché 1 min — la opción más fresca
+  DATA_URL_LIST.push(`https://cdn.statically.io/gh/${_userRepo.user}/${_userRepo.repo}/main/live.json`);
+  // raw como segundo nivel
+  DATA_URL_LIST.push(`https://raw.githubusercontent.com/${_userRepo.user}/${_userRepo.repo}/main/live.json`);
+  // github.io como último recurso (si está accesible relativo, será ./live.json en cualquier caso)
+  if (HASH_URL.includes('github.io')) DATA_URL_LIST.push(HASH_URL);
+}
+// Hash literal (si vino) o local — siempre como fallback final
+if (HASH_URL && !DATA_URL_LIST.includes(HASH_URL)) DATA_URL_LIST.push(HASH_URL);
+if (!DATA_URL_LIST.length) DATA_URL_LIST.push('./live.json');
+
+const DATA_URL_PRIMARY = DATA_URL_LIST[0];
+let gUrlIndex = 0;
 let gCurrentUrl = DATA_URL_PRIMARY;
 let gFailStreak = 0;
 const POLL_MS_VISIBLE = 8000;   // cada 8s con la app visible (máxima inmediatez)
@@ -388,13 +417,14 @@ async function fetchData() {
   } catch(e) {
     if (e.name === 'AbortError') return;
     gFailStreak++;
-    // Tras 3 fallos consecutivos con la URL primaria, probar el fallback
-    if (gFailStreak >= 3 && DATA_URL_FALLBACK && gCurrentUrl !== DATA_URL_FALLBACK) {
-      console.warn('Cambiando a URL fallback:', DATA_URL_FALLBACK);
-      gCurrentUrl = DATA_URL_FALLBACK;
+    // Tras 3 fallos consecutivos, probar la siguiente URL de la cadena
+    if (gFailStreak >= 3 && gUrlIndex < DATA_URL_LIST.length - 1) {
+      gUrlIndex++;
+      gCurrentUrl = DATA_URL_LIST[gUrlIndex];
+      console.warn('Cambiando a URL fallback:', gCurrentUrl);
       gLastEtag = null;
       gFailStreak = 0;
-      showToast('↻ Usando red alternativa…');
+      showToast('↻ Probando ruta alternativa…');
       setTimeout(fetchData, 500);
       return;
     }
@@ -672,10 +702,11 @@ function escapeHtml(s) {
 
 // Deriva la URL base del archivo a partir de la URL de los datos en vivo
 function getArchiveBaseUrl() {
-  // gCurrentUrl puede ser algo como:
+  // gCurrentUrl puede ser:
+  //   https://cdn.statically.io/gh/USER/REPO/main/live.json
   //   https://raw.githubusercontent.com/USER/REPO/main/live.json
-  //   ./live.json
   //   https://user.github.io/repo/live.json
+  //   ./live.json
   const url = gCurrentUrl || '';
   if (url.endsWith('live.json')) return url.slice(0, -'live.json'.length);
   if (url.endsWith('/')) return url;
@@ -1274,7 +1305,7 @@ document.addEventListener('visibilitychange', () => {
 // ── Detección de build obsoleto vs servidor ────────────────────────────────
 // Aparte del SW, hacemos una comprobación periódica: si el HTML del servidor
 // tiene una versión distinta a la nuestra, ofrecemos recargar.
-const LOCAL_BUILD = 'v2.7';
+const LOCAL_BUILD = 'v2.8';
 async function checkForNewerBuild() {
   try {
     // Fetch bypassing all caches
