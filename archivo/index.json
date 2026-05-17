@@ -1,6 +1,20 @@
 {
   "races": [
     {
+      "path": "archivo/2026/2026-05-16-xiii-enduro-de-ereno.json",
+      "name": "XIII Enduro de Ereño",
+      "date": "2026-05-16",
+      "year": "2026",
+      "organizer": "Gernika Off Road",
+      "campeonatos": [
+        "Campeonato de Enduro de Castilla y León",
+        "Campeonato de Enduro de Euskadi",
+        "Campeonato de Enduro de Navarra"
+      ],
+      "riders": 114,
+      "archivedAt": "2026-05-17T20:35:18.466Z"
+    },
+    {
       "path": "archivo/2026/2026-03-01-enduro-branuelas-2026.json",
       "name": "Enduro Brañuelas 2026",
       "date": "2026-03-01",
