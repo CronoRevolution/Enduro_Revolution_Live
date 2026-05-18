@@ -522,9 +522,11 @@ function getNumLaps(rider, cfg) {
 function getChTime(rider, cfg, lap, ctrl) {
   const k = `${lap}-${ctrl}`;
   const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
-  if (cat && cat.chtimes && cat.chtimes[k] != null) return parseFloat(cat.chtimes[k]);
-  const v = cfg.defaultCHTimes && cfg.defaultCHTimes[k];
-  return v != null ? parseFloat(v) : 30;
+  const cv = cat && cat.chtimes && cat.chtimes[k];
+  if (cv && !isNaN(parseFloat(cv))) return parseFloat(cv);
+  const gv = cfg.defaultCHTimes && cfg.defaultCHTimes[k];
+  if (gv && !isNaN(parseFloat(gv))) return parseFloat(gv);
+  return 30;
 }
 
 function stageScores(cfg, s, l, cat) {
@@ -534,36 +536,43 @@ function stageScores(cfg, s, l, cat) {
 }
 
 function computeSchedule(riders, cfg) {
+  if (!riders.length) return [];
   const cats = cfg.categories || [];
   const catOrd = cats.map(c => c.name);
   const groups = {}; catOrd.forEach(n => groups[n] = []);
   const unknown = [];
-  riders.filter(r => !r.dns).forEach(r => {
-    (groups[r.categoria] !== undefined ? groups[r.categoria] : unknown).push(r);
+  riders.forEach(r => {
+    if (groups[r.categoria]) groups[r.categoria].push(r);
+    else unknown.push(r);
   });
   const ordered = [];
   catOrd.forEach(name => {
     const cat = cats.find(c => c.name === name);
-    const m = [...(groups[name]||[])].sort((a,b) => parseInt(a.dorsal)-parseInt(b.dorsal));
+    const members = [...(groups[name]||[])];
+    members.sort((a,b) => parseInt(a.dorsal,10) - parseInt(b.dorsal,10));
     if (cat && cat.reverseTop10) {
-      const top = m.filter(r => parseInt(r.dorsal) <= 10).reverse();
-      const rest = m.filter(r => parseInt(r.dorsal) > 10);
+      const top = members.filter(r => parseInt(r.dorsal,10) <= 10);
+      const rest = members.filter(r => parseInt(r.dorsal,10) > 10);
+      top.reverse();
       ordered.push(...top, ...rest);
-    } else ordered.push(...m);
+    } else ordered.push(...members);
   });
-  unknown.sort((a,b) => parseInt(a.dorsal)-parseInt(b.dorsal));
+  unknown.sort((a,b) => parseInt(a.dorsal,10) - parseInt(b.dorsal,10));
   ordered.push(...unknown);
-  const base = parseT(cfg.startTime) || (10*3600+15*60);
-  const cad = (parseInt(cfg.cadence)||1)*60, grp = Math.max(1, parseInt(cfg.groupSize)||1);
+  const base = parseT(cfg.startTime) ?? (10*3600+15*60);
+  const cad = (parseInt(cfg.cadence)||1)*60;
+  const grp = Math.max(1, parseInt(cfg.groupSize)||1);
+  // Cola continua: el cambio de categoría NO introduce un salto.
+  // El orden de las categorías se mantiene (decidido arriba en `ordered`).
+  const result = [];
   let cursor = base;
-  return ordered.map((rider, idx) => {
-    if (idx === 0) cursor = base;
-    else {
-      if (rider.categoria !== ordered[idx-1].categoria) cursor = Math.ceil((cursor+1)/60)*60;
-      else if (Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
-    }
-    return { ...rider, startSecs: cursor, startStr: fmtHHMM(cursor) };
-  });
+  for (let idx = 0; idx < ordered.length; idx++) {
+    const rider = ordered[idx];
+    if (idx > 0 && Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
+    const offset = rider._startOffset || 0;
+    result.push({ ...rider, startSecs: cursor+offset, startStr: fmtHHMM(cursor+offset) });
+  }
+  return result;
 }
 
 function buildResults(schedule, cfg, timing, stageData) {
