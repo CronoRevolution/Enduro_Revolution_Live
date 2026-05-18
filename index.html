@@ -584,7 +584,7 @@ function buildResults(schedule, cfg, timing, stageData) {
     const cat = cats.find(c => c.name === r.categoria);
     // Expected CH times
     let cur = parseT(rt.actualStart) || r.startSecs;
-    const chExpected = {}, chPens = {};
+    const chExpected = {}, chPens = {}, chDiffs = {};
     let tcPen = 0;
     for (let lap = 1; lap <= nL; lap++) {
       for (let ctrl = 1; ctrl <= nC; ctrl++) {
@@ -594,6 +594,7 @@ function buildResults(schedule, cfg, timing, stageData) {
         const diff = actual != null ? actual - exp : 0;
         chExpected[`${lap}-${ctrl}`] = exp;
         chPens[`${lap}-${ctrl}`] = Math.abs(diff);
+        chDiffs[`${lap}-${ctrl}`] = actual != null ? diff : null;
         tcPen += Math.abs(diff);
         cur = actual != null ? actual : exp;
       }
@@ -640,7 +641,7 @@ function buildResults(schedule, cfg, timing, stageData) {
       else break; // huecos rompen la racha
     }
     const allLapsDone = lastDoneLap >= nL;
-    return { ...r, nL, nC, chPens, chActual, chExpected,
+    return { ...r, nL, nC, chPens, chDiffs, chActual, chExpected,
       startPen, manPen, tcPen, penTotal, stTimes, stTotal,
       total: penTotal + stTotal, status, finished, lastDoneLap, allLapsDone };
   });
@@ -1215,12 +1216,22 @@ function renderDetail() {
       const actual = r.chActual[key];
       const exp = r.chExpected[key];
       const pen = r.chPens[key] || 0;
+      const diff = r.chDiffs ? r.chDiffs[key] : null;
       if (actual || exp) {
         hasCH = true;
+        const sign = diff != null && diff !== 0 ? (diff > 0 ? '+' : '−') : '';
+        const penLabel = diff != null && diff !== 0
+          ? (diff > 0 ? 'retraso' : 'adelanto')
+          : '';
         chHtml += `<div class="detail-cell">
           <div class="detail-cell-label">CH${ctrl} · V${l}</div>
-          <div class="detail-cell-val ${pen > 0 ? 'pen' : 'good'}">${actual || fmtHHMM(exp)}</div>
-          ${pen > 0 ? `<div style="font-size:0.62rem;color:var(--red);margin-top:2px">+${fmtPen(pen)} pen.</div>` : ''}
+          <div style="display:flex;justify-content:space-between;gap:0.5rem;font-size:0.7rem;color:var(--dim);margin-top:2px">
+            <span>Prevista</span><span style="font-family:monospace;color:var(--text)">${fmtHHMM(exp)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;gap:0.5rem;font-size:0.7rem;color:var(--dim);margin-top:1px">
+            <span>Real</span><span style="font-family:monospace;color:${actual ? (pen > 0 ? 'var(--red)' : 'var(--green)') : 'var(--dim)'}">${actual || '—'}</span>
+          </div>
+          ${pen > 0 ? `<div style="font-size:0.68rem;color:var(--red);margin-top:3px;font-weight:600">${sign}${fmtPen(pen)} ${penLabel}</div>` : ''}
         </div>`;
       }
     }
