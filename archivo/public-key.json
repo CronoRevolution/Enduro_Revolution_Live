@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "algorithm": "Ed25519",
+  "fingerprint": "59PhxfUmA8F9",
+  "publicJwk": {
+    "alg": "Ed25519",
+    "crv": "Ed25519",
+    "ext": true,
+    "key_ops": [
+      "verify"
+    ],
+    "kty": "OKP",
+    "x": "RbdEL7fyRoSoN3p76JCNN6peCflMccQ_l9Tn_vk0HUk"
+  },
+  "publishedAt": "2026-06-01T12:29:59.678Z"
+}
