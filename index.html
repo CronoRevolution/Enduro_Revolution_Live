@@ -241,6 +241,8 @@ font-size:0.65rem;color:var(--dim)}
 .welcome-footer{margin-top:auto;padding:16px 0 8px;text-align:center;
   font-size:0.6rem;color:var(--dim);opacity:0.7}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -256,6 +258,7 @@ font-size:0.65rem;color:var(--dim)}
   <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0">
     <span class="status-dot offline" id="statusDot"></span>
     <span class="status-age offline" id="statusAge">—</span>
+    <span id="dataSource" style="font-size:0.55rem;white-space:nowrap"></span>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tema">☀️</button>
     <button class="refresh-btn" onclick="fetchData()">↻</button>
   </div>
@@ -385,6 +388,51 @@ let gPollTimer = null;
 let gLastFetchTs = null;  // timestamp del último fetch con éxito
 let gAgeTimer = null;
 
+// ── Firebase Realtime: datos live instantáneos (<1s de latencia) ──────────
+// Complementa el polling a GitHub (que sigue como fallback). Si Firebase
+// está disponible, los datos llegan por listener onValue() en tiempo real.
+let gFirebaseActive = false;
+let gFirebaseRef = null;
+try {
+  if (typeof firebase !== 'undefined' && firebase.initializeApp) {
+    const fbApp = firebase.initializeApp({
+      apiKey:"AIzaSyDIpeH0Nj7aXEDcg5a4figmCYCvTL_hpfU",
+      authDomain:"enduro-revolution-live.firebaseapp.com",
+      databaseURL:"https://enduro-revolution-live-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId:"enduro-revolution-live",
+    });
+    const fbDb = firebase.database();
+    gFirebaseRef = fbDb.ref('live');
+    // Suscribirse al nodo live. Cada cambio dispara el callback con los datos
+    // actualizados — sin polling, sin delay de CDN.
+    gFirebaseRef.on('value', (snapshot) => {
+      try {
+        const raw = snapshot.val();
+        if (!raw) return; // nodo vacío, nada que hacer
+        // Solo actualizar si estamos viendo datos LIVE (no un archivo histórico)
+        if (gViewingArchive) return;
+        const changed = JSON.stringify(raw) !== JSON.stringify(gData);
+        if (!changed) return;
+        gData = raw;
+        gLastFetchTs = Date.now();
+        gFailStreak = 0;
+        gFirebaseActive = true;
+        setStatus('live');
+        updateAge();
+        renderAll();
+      } catch (e) {
+        console.warn('Firebase onValue error:', e);
+      }
+    }, (error) => {
+      console.warn('Firebase listener error:', error);
+      gFirebaseActive = false;
+    });
+    gFirebaseActive = true;
+  }
+} catch (e) {
+  console.warn('Firebase init failed:', e);
+}
+
 // ── Fetch datos ────────────────────────────────────────────────────────────
 // ── Tema oscuro/claro ────────────────────────────────────────────────────────
 let gDark = localStorage.getItem('er_mobile_dark') !== '0';
@@ -450,6 +498,19 @@ function setStatus(s) {
   if (d) d.className = 'status-dot ' + s;
   const a = document.getElementById('statusAge');
   if (a) a.className = 'status-age ' + s;
+  // Indicador de fuente de datos: ⚡ Firebase en tiempo real / 📡 GitHub polling
+  const src = document.getElementById('dataSource');
+  if (src) {
+    if (gFirebaseActive && s === 'live') {
+      src.textContent = '⚡ Tiempo real';
+      src.style.color = 'var(--green, #22c55e)';
+    } else if (s === 'live') {
+      src.textContent = '📡 Polling';
+      src.style.color = 'var(--dim, #94a3b8)';
+    } else {
+      src.textContent = '';
+    }
+  }
 }
 
 function updateAge() {
@@ -522,11 +583,9 @@ function getNumLaps(rider, cfg) {
 function getChTime(rider, cfg, lap, ctrl) {
   const k = `${lap}-${ctrl}`;
   const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
-  const cv = cat && cat.chtimes && cat.chtimes[k];
-  if (cv && !isNaN(parseFloat(cv))) return parseFloat(cv);
-  const gv = cfg.defaultCHTimes && cfg.defaultCHTimes[k];
-  if (gv && !isNaN(parseFloat(gv))) return parseFloat(gv);
-  return 30;
+  if (cat && cat.chtimes && cat.chtimes[k] != null) return parseFloat(cat.chtimes[k]);
+  const v = cfg.defaultCHTimes && cfg.defaultCHTimes[k];
+  return v != null ? parseFloat(v) : 30;
 }
 
 function stageScores(cfg, s, l, cat) {
@@ -536,43 +595,36 @@ function stageScores(cfg, s, l, cat) {
 }
 
 function computeSchedule(riders, cfg) {
-  if (!riders.length) return [];
   const cats = cfg.categories || [];
   const catOrd = cats.map(c => c.name);
   const groups = {}; catOrd.forEach(n => groups[n] = []);
   const unknown = [];
-  riders.forEach(r => {
-    if (groups[r.categoria]) groups[r.categoria].push(r);
-    else unknown.push(r);
+  riders.filter(r => !r.dns).forEach(r => {
+    (groups[r.categoria] !== undefined ? groups[r.categoria] : unknown).push(r);
   });
   const ordered = [];
   catOrd.forEach(name => {
     const cat = cats.find(c => c.name === name);
-    const members = [...(groups[name]||[])];
-    members.sort((a,b) => parseInt(a.dorsal,10) - parseInt(b.dorsal,10));
+    const m = [...(groups[name]||[])].sort((a,b) => parseInt(a.dorsal)-parseInt(b.dorsal));
     if (cat && cat.reverseTop10) {
-      const top = members.filter(r => parseInt(r.dorsal,10) <= 10);
-      const rest = members.filter(r => parseInt(r.dorsal,10) > 10);
-      top.reverse();
+      const top = m.filter(r => parseInt(r.dorsal) <= 10).reverse();
+      const rest = m.filter(r => parseInt(r.dorsal) > 10);
       ordered.push(...top, ...rest);
-    } else ordered.push(...members);
+    } else ordered.push(...m);
   });
-  unknown.sort((a,b) => parseInt(a.dorsal,10) - parseInt(b.dorsal,10));
+  unknown.sort((a,b) => parseInt(a.dorsal)-parseInt(b.dorsal));
   ordered.push(...unknown);
-  const base = parseT(cfg.startTime) ?? (10*3600+15*60);
-  const cad = (parseInt(cfg.cadence)||1)*60;
-  const grp = Math.max(1, parseInt(cfg.groupSize)||1);
-  // Cola continua: el cambio de categoría NO introduce un salto.
-  // El orden de las categorías se mantiene (decidido arriba en `ordered`).
-  const result = [];
+  const base = parseT(cfg.startTime) || (10*3600+15*60);
+  const cad = (parseInt(cfg.cadence)||1)*60, grp = Math.max(1, parseInt(cfg.groupSize)||1);
   let cursor = base;
-  for (let idx = 0; idx < ordered.length; idx++) {
-    const rider = ordered[idx];
-    if (idx > 0 && Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
-    const offset = rider._startOffset || 0;
-    result.push({ ...rider, startSecs: cursor+offset, startStr: fmtHHMM(cursor+offset) });
-  }
-  return result;
+  return ordered.map((rider, idx) => {
+    if (idx === 0) cursor = base;
+    else {
+      if (rider.categoria !== ordered[idx-1].categoria) cursor = Math.ceil((cursor+1)/60)*60;
+      else if (Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
+    }
+    return { ...rider, startSecs: cursor, startStr: fmtHHMM(cursor) };
+  });
 }
 
 function buildResults(schedule, cfg, timing, stageData) {
@@ -584,7 +636,7 @@ function buildResults(schedule, cfg, timing, stageData) {
     const cat = cats.find(c => c.name === r.categoria);
     // Expected CH times
     let cur = parseT(rt.actualStart) || r.startSecs;
-    const chExpected = {}, chPens = {}, chDiffs = {};
+    const chExpected = {}, chPens = {};
     let tcPen = 0;
     for (let lap = 1; lap <= nL; lap++) {
       for (let ctrl = 1; ctrl <= nC; ctrl++) {
@@ -594,7 +646,6 @@ function buildResults(schedule, cfg, timing, stageData) {
         const diff = actual != null ? actual - exp : 0;
         chExpected[`${lap}-${ctrl}`] = exp;
         chPens[`${lap}-${ctrl}`] = Math.abs(diff);
-        chDiffs[`${lap}-${ctrl}`] = actual != null ? diff : null;
         tcPen += Math.abs(diff);
         cur = actual != null ? actual : exp;
       }
@@ -641,7 +692,7 @@ function buildResults(schedule, cfg, timing, stageData) {
       else break; // huecos rompen la racha
     }
     const allLapsDone = lastDoneLap >= nL;
-    return { ...r, nL, nC, chPens, chDiffs, chActual, chExpected,
+    return { ...r, nL, nC, chPens, chActual, chExpected,
       startPen, manPen, tcPen, penTotal, stTimes, stTotal,
       total: penTotal + stTotal, status, finished, lastDoneLap, allLapsDone };
   });
@@ -718,9 +769,24 @@ function renderLiveBanner() {
   const slot = document.getElementById('liveBannerSlot');
   if (!slot) return;
   if (gViewingArchive) {
+    // Badge de verificación de firma
+    let badge = '';
+    if (gViewingArchive.verified) {
+      badge = '<span title="Firma verificada (huella ' + escapeHtml(gViewingArchive.fingerprint||'') + ')" ' +
+        'style="background:rgba(34,197,94,0.18);color:#86efac;border:1px solid rgba(34,197,94,0.45);' +
+        'border-radius:4px;padding:0.05rem 0.32rem;font-size:0.62rem;margin-left:0.4rem;white-space:nowrap;">✓ verificada</span>';
+    } else if (gViewingArchive.verifyReason === 'invalid-signature') {
+      badge = '<span title="La firma no es válida. Este archivo pudo haber sido modificado tras publicarse." ' +
+        'style="background:rgba(239,68,68,0.18);color:#fca5a5;border:1px solid rgba(239,68,68,0.5);' +
+        'border-radius:4px;padding:0.05rem 0.32rem;font-size:0.62rem;margin-left:0.4rem;white-space:nowrap;">⚠ firma inválida</span>';
+    } else if (gViewingArchive.verifyReason === 'no-signature') {
+      badge = '<span title="Esta carrera no incluye firma criptográfica (publicada con versión anterior o sin claves configuradas)." ' +
+        'style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.4);' +
+        'border-radius:4px;padding:0.05rem 0.32rem;font-size:0.62rem;margin-left:0.4rem;white-space:nowrap;">sin firma</span>';
+    }
     slot.innerHTML = '<div class="archive-banner">' +
       '<span>📦 Viendo histórico: <b>' + escapeHtml(gViewingArchive.name || 'Prueba archivada') + '</b>' +
-      (gViewingArchive.date ? ' · ' + gViewingArchive.date : '') + '</span>' +
+      (gViewingArchive.date ? ' · ' + gViewingArchive.date : '') + badge + '</span>' +
       '<button onclick="returnToLive()">↩ Volver a en vivo</button></div>';
   } else {
     slot.innerHTML = '';
@@ -837,33 +903,92 @@ function renderArchiveList() {
 }
 
 let gArchiveController = null;
+// ─── Verificación de firmas de carreras archivadas ─────────────────────
+// Helpers WebCrypto para verificar firmas Ed25519. Cargamos la clave pública
+// del repo UNA vez por sesión y la cacheamos.
+let gPublicKeyCached = null; // { key: CryptoKey, fingerprint: 'xxx' } | null
+let gPublicKeyLoadAttempted = false;
+
+function b64ToBuf(b64) {
+  const s = atob(b64);
+  const bytes = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function loadPublicKey() {
+  if (gPublicKeyCached) return gPublicKeyCached;
+  if (gPublicKeyLoadAttempted) return null;
+  gPublicKeyLoadAttempted = true;
+  const baseUrl = getArchiveBaseUrl();
+  if (!baseUrl) return null;
+  try {
+    const resp = await fetch(baseUrl + 'archivo/public-key.json?_=' + Date.now());
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (!data.publicJwk || !window.crypto || !window.crypto.subtle) return null;
+    const key = await window.crypto.subtle.importKey(
+      'jwk', data.publicJwk, { name: 'Ed25519' }, false, ['verify']);
+    gPublicKeyCached = { key, fingerprint: data.fingerprint || '' };
+    return gPublicKeyCached;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Verifica el JSON crudo de una carrera. Devuelve:
+//   { verified: true, data, fingerprint }   → firma OK
+//   { verified: false, data, reason }        → firma inválida o ausente
+async function verifyRaceJson(rawJson) {
+  if (!rawJson || typeof rawJson !== 'object' || !rawJson.signature || !rawJson.data) {
+    return { verified: false, data: rawJson, reason: 'no-signature' };
+  }
+  const pub = await loadPublicKey();
+  if (!pub) return { verified: false, data: rawJson.data, reason: 'no-public-key' };
+  try {
+    const canonical = JSON.stringify(rawJson.data, Object.keys(rawJson.data).sort());
+    const sig = b64ToBuf(rawJson.signature);
+    const enc = new TextEncoder().encode(canonical);
+    const ok = await window.crypto.subtle.verify({ name: 'Ed25519' }, pub.key, sig, enc);
+    if (ok) return { verified: true, data: rawJson.data, fingerprint: pub.fingerprint };
+    return { verified: false, data: rawJson.data, reason: 'invalid-signature' };
+  } catch (e) {
+    return { verified: false, data: rawJson.data, reason: 'verify-error: ' + e.message };
+  }
+}
+
 async function loadArchivedRace(path) {
   const baseUrl = getArchiveBaseUrl();
   const url = baseUrl + path + '?_=' + Date.now();
   showToast('Cargando…');
-  // Abortar carga anterior si seguía en curso
   if (gArchiveController) { try { gArchiveController.abort(); } catch (e) {} }
   gArchiveController = new AbortController();
   try {
     const resp = await fetch(url, { signal: gArchiveController.signal });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const raceData = await resp.json();
-    // Backup de datos en vivo si no lo teníamos ya
+    const rawJson = await resp.json();
+    const verifyResult = await verifyRaceJson(rawJson);
+    const raceData = verifyResult.data;
     if (!gViewingArchive && gData) gLiveDataBackup = gData;
     gData = raceData;
     gViewingArchive = {
       path,
       name: raceData.config?.name || '',
-      date: raceData.config?.date || ''
+      date: raceData.config?.date || '',
+      verified: verifyResult.verified,
+      verifyReason: verifyResult.reason || '',
+      fingerprint: verifyResult.fingerprint || ''
     };
-    // Parar polling de datos en vivo mientras miramos archivo
+    if (!verifyResult.verified && verifyResult.reason === 'invalid-signature') {
+      showToast('⚠ Firma inválida: este archivo pudo ser modificado tras publicarse', 5000);
+    }
     if (gPollTimer) { clearInterval(gPollTimer); gPollTimer = null; }
     gView = 'cats';
     showView('vCats');
     renderAll();
     history.pushState({view:'cats', archive:path}, '', '');
   } catch (e) {
-    if (e.name === 'AbortError') return; // navegación cambió, no es error
+    if (e.name === 'AbortError') return;
     showToast('Error: ' + e.message);
   }
 }
@@ -1216,22 +1341,12 @@ function renderDetail() {
       const actual = r.chActual[key];
       const exp = r.chExpected[key];
       const pen = r.chPens[key] || 0;
-      const diff = r.chDiffs ? r.chDiffs[key] : null;
       if (actual || exp) {
         hasCH = true;
-        const sign = diff != null && diff !== 0 ? (diff > 0 ? '+' : '−') : '';
-        const penLabel = diff != null && diff !== 0
-          ? (diff > 0 ? 'retraso' : 'adelanto')
-          : '';
         chHtml += `<div class="detail-cell">
           <div class="detail-cell-label">CH${ctrl} · V${l}</div>
-          <div style="display:flex;justify-content:space-between;gap:0.5rem;font-size:0.7rem;color:var(--dim);margin-top:2px">
-            <span>Prevista</span><span style="font-family:monospace;color:var(--text)">${fmtHHMM(exp)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;gap:0.5rem;font-size:0.7rem;color:var(--dim);margin-top:1px">
-            <span>Real</span><span style="font-family:monospace;color:${actual ? (pen > 0 ? 'var(--red)' : 'var(--green)') : 'var(--dim)'}">${actual || '—'}</span>
-          </div>
-          ${pen > 0 ? `<div style="font-size:0.68rem;color:var(--red);margin-top:3px;font-weight:600">${sign}${fmtPen(pen)} ${penLabel}</div>` : ''}
+          <div class="detail-cell-val ${pen > 0 ? 'pen' : 'good'}">${actual || fmtHHMM(exp)}</div>
+          ${pen > 0 ? `<div style="font-size:0.62rem;color:var(--red);margin-top:2px">+${fmtPen(pen)} pen.</div>` : ''}
         </div>`;
       }
     }
@@ -1334,7 +1449,11 @@ window.addEventListener('popstate', (e) => {
 // Función para (re)programar el timer según visibilidad
 function schedulePoll() {
   if (gPollTimer) clearInterval(gPollTimer);
-  const ms = document.visibilityState === 'visible' ? POLL_MS_VISIBLE : POLL_MS_HIDDEN;
+  // Si Firebase está activo, el polling a GitHub es solo fallback (cada 60s).
+  // Si no, mantiene el ritmo normal (8s visible / 30s oculto).
+  const ms = gFirebaseActive
+    ? 60000
+    : (document.visibilityState === 'visible' ? POLL_MS_VISIBLE : POLL_MS_HIDDEN);
   gPollTimer = setInterval(fetchData, ms);
 }
 
