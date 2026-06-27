@@ -580,6 +580,16 @@ function getNumLaps(rider, cfg) {
   try { return v ? parseInt(v) : parseInt(cfg.numLaps||1); } catch(e) { return 1; }
 }
 
+// Nº de vueltas con control horario. Si la categoría define chLaps, solo las
+// primeras chLaps vueltas tienen CH; el resto se cronometran SIN CH. Igual que la app central.
+function getCHLaps(rider, cfg) {
+  const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
+  const v = parseInt(cat && cat.chLaps || '');
+  const nL = getNumLaps(rider, cfg);
+  return (v > 0) ? Math.min(v, nL) : nL;
+}
+function lapHasCH(rider, cfg, lap) { return lap <= getCHLaps(rider, cfg); }
+
 function getChTime(rider, cfg, lap, ctrl) {
   const k = `${lap}-${ctrl}`;
   const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
@@ -599,7 +609,7 @@ function computeSchedule(riders, cfg) {
   const catOrd = cats.map(c => c.name);
   const groups = {}; catOrd.forEach(n => groups[n] = []);
   const unknown = [];
-  riders.filter(r => !r.dns).forEach(r => {
+  riders.forEach(r => {
     (groups[r.categoria] !== undefined ? groups[r.categoria] : unknown).push(r);
   });
   const ordered = [];
@@ -616,21 +626,25 @@ function computeSchedule(riders, cfg) {
   ordered.push(...unknown);
   const base = parseT(cfg.startTime) || (10*3600+15*60);
   const cad = (parseInt(cfg.cadence)||1)*60, grp = Math.max(1, parseInt(cfg.groupSize)||1);
+  // Cola continua (igual que la app central): el cambio de categoría NO introduce
+  // salto. Avanza una franja de cadencia cada `grp` pilotos. Aplica _startOffset.
+  const result = [];
   let cursor = base;
-  return ordered.map((rider, idx) => {
-    if (idx === 0) cursor = base;
-    else {
-      if (rider.categoria !== ordered[idx-1].categoria) cursor = Math.ceil((cursor+1)/60)*60;
-      else if (Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
-    }
-    return { ...rider, startSecs: cursor, startStr: fmtHHMM(cursor) };
-  });
+  for (let idx = 0; idx < ordered.length; idx++) {
+    const rider = ordered[idx];
+    if (idx > 0 && Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
+    const offset = rider._startOffset || 0;
+    result.push({ ...rider, startSecs: cursor+offset, startStr: fmtHHMM(cursor+offset) });
+  }
+  return result;
 }
 
 function buildResults(schedule, cfg, timing, stageData) {
   const nS = parseInt(cfg.numStages)||2, nC = parseInt(cfg.numTimeControls)||1;
   const cats = cfg.categories||[];
-  return schedule.map(r => {
+  // Los DNS sí entran en computeSchedule (para que las horas de salida cuadren con
+  // la app central), pero NO se muestran en la clasificación: se filtran aquí.
+  return schedule.filter(r => !r.dns).map(r => {
     const nL = getNumLaps(r, cfg);
     const rt = timing[r.id] || {};
     const cat = cats.find(c => c.name === r.categoria);
@@ -639,6 +653,7 @@ function buildResults(schedule, cfg, timing, stageData) {
     const chExpected = {}, chPens = {};
     let tcPen = 0;
     for (let lap = 1; lap <= nL; lap++) {
+      if (!lapHasCH(r, cfg, lap)) continue; // vuelta sin CH: no entra en previstos ni penaliza
       for (let ctrl = 1; ctrl <= nC; ctrl++) {
         const exp = cur + getChTime(r, cfg, lap, ctrl)*60;
         const stored = rt[`${lap}-${ctrl}`];
@@ -769,24 +784,9 @@ function renderLiveBanner() {
   const slot = document.getElementById('liveBannerSlot');
   if (!slot) return;
   if (gViewingArchive) {
-    // Badge de verificación de firma
-    let badge = '';
-    if (gViewingArchive.verified) {
-      badge = '<span title="Firma verificada (huella ' + escapeHtml(gViewingArchive.fingerprint||'') + ')" ' +
-        'style="background:rgba(34,197,94,0.18);color:#86efac;border:1px solid rgba(34,197,94,0.45);' +
-        'border-radius:4px;padding:0.05rem 0.32rem;font-size:0.62rem;margin-left:0.4rem;white-space:nowrap;">✓ verificada</span>';
-    } else if (gViewingArchive.verifyReason === 'invalid-signature') {
-      badge = '<span title="La firma no es válida. Este archivo pudo haber sido modificado tras publicarse." ' +
-        'style="background:rgba(239,68,68,0.18);color:#fca5a5;border:1px solid rgba(239,68,68,0.5);' +
-        'border-radius:4px;padding:0.05rem 0.32rem;font-size:0.62rem;margin-left:0.4rem;white-space:nowrap;">⚠ firma inválida</span>';
-    } else if (gViewingArchive.verifyReason === 'no-signature') {
-      badge = '<span title="Esta carrera no incluye firma criptográfica (publicada con versión anterior o sin claves configuradas)." ' +
-        'style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.4);' +
-        'border-radius:4px;padding:0.05rem 0.32rem;font-size:0.62rem;margin-left:0.4rem;white-space:nowrap;">sin firma</span>';
-    }
     slot.innerHTML = '<div class="archive-banner">' +
       '<span>📦 Viendo histórico: <b>' + escapeHtml(gViewingArchive.name || 'Prueba archivada') + '</b>' +
-      (gViewingArchive.date ? ' · ' + gViewingArchive.date : '') + badge + '</span>' +
+      (gViewingArchive.date ? ' · ' + gViewingArchive.date : '') + '</span>' +
       '<button onclick="returnToLive()">↩ Volver a en vivo</button></div>';
   } else {
     slot.innerHTML = '';
@@ -903,60 +903,6 @@ function renderArchiveList() {
 }
 
 let gArchiveController = null;
-// ─── Verificación de firmas de carreras archivadas ─────────────────────
-// Helpers WebCrypto para verificar firmas Ed25519. Cargamos la clave pública
-// del repo UNA vez por sesión y la cacheamos.
-let gPublicKeyCached = null; // { key: CryptoKey, fingerprint: 'xxx' } | null
-let gPublicKeyLoadAttempted = false;
-
-function b64ToBuf(b64) {
-  const s = atob(b64);
-  const bytes = new Uint8Array(s.length);
-  for (let i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
-  return bytes.buffer;
-}
-
-async function loadPublicKey() {
-  if (gPublicKeyCached) return gPublicKeyCached;
-  if (gPublicKeyLoadAttempted) return null;
-  gPublicKeyLoadAttempted = true;
-  const baseUrl = getArchiveBaseUrl();
-  if (!baseUrl) return null;
-  try {
-    const resp = await fetch(baseUrl + 'archivo/public-key.json?_=' + Date.now());
-    if (!resp.ok) return null;
-    const data = await resp.json();
-    if (!data.publicJwk || !window.crypto || !window.crypto.subtle) return null;
-    const key = await window.crypto.subtle.importKey(
-      'jwk', data.publicJwk, { name: 'Ed25519' }, false, ['verify']);
-    gPublicKeyCached = { key, fingerprint: data.fingerprint || '' };
-    return gPublicKeyCached;
-  } catch (e) {
-    return null;
-  }
-}
-
-// Verifica el JSON crudo de una carrera. Devuelve:
-//   { verified: true, data, fingerprint }   → firma OK
-//   { verified: false, data, reason }        → firma inválida o ausente
-async function verifyRaceJson(rawJson) {
-  if (!rawJson || typeof rawJson !== 'object' || !rawJson.signature || !rawJson.data) {
-    return { verified: false, data: rawJson, reason: 'no-signature' };
-  }
-  const pub = await loadPublicKey();
-  if (!pub) return { verified: false, data: rawJson.data, reason: 'no-public-key' };
-  try {
-    const canonical = JSON.stringify(rawJson.data, Object.keys(rawJson.data).sort());
-    const sig = b64ToBuf(rawJson.signature);
-    const enc = new TextEncoder().encode(canonical);
-    const ok = await window.crypto.subtle.verify({ name: 'Ed25519' }, pub.key, sig, enc);
-    if (ok) return { verified: true, data: rawJson.data, fingerprint: pub.fingerprint };
-    return { verified: false, data: rawJson.data, reason: 'invalid-signature' };
-  } catch (e) {
-    return { verified: false, data: rawJson.data, reason: 'verify-error: ' + e.message };
-  }
-}
-
 async function loadArchivedRace(path) {
   const baseUrl = getArchiveBaseUrl();
   const url = baseUrl + path + '?_=' + Date.now();
@@ -966,22 +912,14 @@ async function loadArchivedRace(path) {
   try {
     const resp = await fetch(url, { signal: gArchiveController.signal });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const rawJson = await resp.json();
-    const verifyResult = await verifyRaceJson(rawJson);
-    const raceData = verifyResult.data;
+    const raceData = await resp.json();
     if (!gViewingArchive && gData) gLiveDataBackup = gData;
     gData = raceData;
     gViewingArchive = {
       path,
       name: raceData.config?.name || '',
-      date: raceData.config?.date || '',
-      verified: verifyResult.verified,
-      verifyReason: verifyResult.reason || '',
-      fingerprint: verifyResult.fingerprint || ''
+      date: raceData.config?.date || ''
     };
-    if (!verifyResult.verified && verifyResult.reason === 'invalid-signature') {
-      showToast('⚠ Firma inválida: este archivo pudo ser modificado tras publicarse', 5000);
-    }
     if (gPollTimer) { clearInterval(gPollTimer); gPollTimer = null; }
     gView = 'cats';
     showView('vCats');
@@ -1080,7 +1018,7 @@ function renderCatList() {
   const timing = gData.timing || {};
   const stageData = gData.stageData || {};
   const allRiders = gData.riders || [];
-  const schedule = computeSchedule(allRiders.filter(r => !r.dns), cfg);
+  const schedule = computeSchedule(allRiders, cfg);
   const results = buildResults(schedule, cfg, timing, stageData);
 
   const sel = gCatSel || '__cats__';
@@ -1166,7 +1104,7 @@ function renderClasif() {
   const timing = gData.timing || {};
   const stageData = gData.stageData || {};
   const allRiders = gData.riders || [];
-  const schedule = computeSchedule(allRiders.filter(r => !r.dns), cfg);
+  const schedule = computeSchedule(allRiders, cfg);
   let results = buildResults(schedule, cfg, timing, stageData);
 
   const sel = gCatSel || '__cats__';
@@ -1285,7 +1223,7 @@ function renderDetail() {
   const timing = gData.timing || {};
   const stageData = gData.stageData || {};
   const allRiders = gData.riders || [];
-  const schedule = computeSchedule(allRiders.filter(r => !r.dns), cfg);
+  const schedule = computeSchedule(allRiders, cfg);
   const results = buildResults(schedule, cfg, timing, stageData);
 
   const r = results.find(x => x.id === gPilotId);
