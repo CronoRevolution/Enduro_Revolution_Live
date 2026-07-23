@@ -11,11 +11,11 @@
 //   - Datos en vivo (live.json, índice, archivo/*.json): network-first.
 //   - Iconos / imágenes: cache-first.
 
-const CACHE_NAME = "enduro-clasif-v7";
+const CACHE_NAME = "enduro-clasif-v8";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 // Rutas que este SW NO debe tocar nunca (tienen su propio ciclo de vida).
-const EXCLUIDAS = ["comisario.html", "manifest-comisario.json", "control-horario.html"];
+const EXCLUIDAS = ["/comisario/", "comisario.html", "manifest-comisario.json", "control-horario.html"];
 function estaExcluida(path) {
   return EXCLUIDAS.some(x => path.includes(x));
 }
