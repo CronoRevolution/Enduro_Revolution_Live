@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Control Horario — Enduro Revolution</title>
+<!-- Modo app: se instala en la pantalla de inicio y abre sin barra del navegador -->
+<link rel="manifest" href="./manifest-ch.json"/>
+<meta name="theme-color" content="#0c0c0f"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Control Horario"/>
+<link rel="apple-touch-icon" href="./icon-192.png"/>
 <style>
   :root{ --bg:#0c0c0f; --panel:#17171c; --alt:#1f1f27; --border:#2b2b34;
          --text:#e8e8ec; --muted:#8a8a95; --red:#c81e1e; --green:#22c55e;
@@ -299,6 +306,7 @@ window.guardarSetup=function(){
   setup={ controlId, nombre:nombre||`C${stage}CH${ctrl}`, stage, ctrl, comisario };
   save(LS_SETUP, setup);
   pushPresencia();
+  pedirWakeLock();
   render();
 };
 window.onPasa=function(){
@@ -322,10 +330,28 @@ window.cambiarControl=function(){
   }
 };
 
+// --- Mantener la pantalla encendida mientras se ficha ---
+// Sin esto el móvil se apaga cada poco y el comisario pierde tiempo
+// desbloqueando justo cuando llega una moto.
+let wakeLock=null;
+async function pedirWakeLock(){
+  try{
+    if("wakeLock" in navigator){
+      wakeLock=await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release",()=>{wakeLock=null;});
+    }
+  }catch(e){ /* no soportado o denegado: no es crítico */ }
+}
+// Reintentar cuando la app vuelve a primer plano (el wake lock se pierde al salir)
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"&&!wakeLock&&setup)pedirWakeLock();
+});
+
 // --- Arranque ---
 initClockSync();
 render();
 sincronizar();
+if(setup)pedirWakeLock();
 </script>
 </body>
 </html>
