@@ -87,7 +87,7 @@
 
 // --- Config Firebase (misma BD que el resto del sistema) ---
 const firebaseConfig = {
-  databaseURL: "https://enduro-revolution-live-default-rtdb.firebaseio.com",
+  databaseURL: "https://enduro-revolution-live-default-rtdb.europe-west1.firebasedatabase.app",
 };
 let db=null, connected=false;
 try{
@@ -104,6 +104,7 @@ let queue = load(LS_QUEUE) || [];     // fichajes locales: { id, dorsal, horaMs,
 let clockOffset = 0;                  // ms a sumar al reloj local para obtener hora "oficial"
 let clockState = "pending";           // pending | ok | warn | bad
 let dorsalActual = "";
+let promptInstalar = null;   // evento de instalación (Chrome/Android)
 
 function load(k){ try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;} }
 function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
@@ -229,6 +230,7 @@ function pantallaSetup(){
         <input id="s_comisario" placeholder="Ej: Juan" value="${s.comisario||''}">
       </div>
       <button class="btnPasa" style="font-size:1.2rem;padding:1rem" onclick="guardarSetup()">Empezar a fichar →</button>
+      ${promptInstalar?`<button class="btnSec" onclick="instalarApp()" style="width:100%">📲 Instalar como app</button>`:''}
       <div class="mini" style="text-align:center">Reloj: ${clockBadge()}</div>
     </main>
   </div>`;
@@ -328,6 +330,30 @@ window.cambiarControl=function(){
   if(confirm("¿Cambiar la configuración del control? Tus fichajes locales se conservan.")){
     setup=null; save(LS_SETUP,null); render();
   }
+};
+
+// --- Service worker: requisito para instalar como app en Android ---
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw-ch.js").catch(e=>console.warn("SW",e.message));
+  });
+}
+
+// --- Botón de instalar (Chrome/Android dispara este evento si es instalable) ---
+window.addEventListener("beforeinstallprompt",(e)=>{
+  e.preventDefault();
+  promptInstalar=e;
+  render(); // para que aparezca el botón
+});
+window.instalarApp=async function(){
+  if(!promptInstalar){
+    alert("Si no ves la opción automática, usa el menú del navegador (⋮) → \"Añadir a pantalla de inicio\" o \"Instalar aplicación\".");
+    return;
+  }
+  promptInstalar.prompt();
+  await promptInstalar.userChoice;
+  promptInstalar=null;
+  render();
 };
 
 // --- Mantener la pantalla encendida mientras se ficha ---
