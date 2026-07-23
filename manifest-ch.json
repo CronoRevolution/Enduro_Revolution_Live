@@ -1,25 +1,16 @@
 {
+  "id": "/enduro-control-horario",
   "name": "Control Horario · Enduro Revolution",
-  "short_name": "Control Horario",
+  "short_name": "Control CH",
   "description": "Fichaje de paso por control horario para comisarios",
-  "start_url": "./control-horario.html",
-  "scope": "./",
+  "start_url": "./control-horario.html?app=ch",
+  "scope": "./control-horario.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0c0c0f",
-  "theme_color": "#0c0c0f",
+  "theme_color": "#c81e1e",
   "icons": [
-    {
-      "src": "./icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "./icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }

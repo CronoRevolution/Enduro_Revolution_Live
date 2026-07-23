@@ -89,13 +89,30 @@
 const firebaseConfig = {
   databaseURL: "https://enduro-revolution-live-default-rtdb.europe-west1.firebasedatabase.app",
 };
-let db=null, connected=false;
+let db=null, connected=false, ultimaSubidaOk=0;
 try{
   firebase.initializeApp(firebaseConfig);
   db=firebase.database();
   firebase.auth().signInAnonymously().catch(e=>console.warn("auth",e.message));
   db.ref(".info/connected").on("value",s=>{ connected=!!s.val(); render(); });
 }catch(e){ console.warn("Firebase init", e); }
+// Consideramos que hay conexión si Firebase lo dice O si hemos subido algo con
+// éxito hace menos de 30s (a veces .info/connected tarda o da falsos negativos).
+function hayConexion(){
+  return connected || (Date.now()-ultimaSubidaOk < 30000);
+}
+
+// --- Carrera activa: la lee del nodo live/ que publica el programa central ---
+// Así el comisario ve para qué carrera está fichando, sin configurar nada.
+let carreraActiva=null;
+function escucharCarrera(){
+  if(!db)return;
+  db.ref("live/config").on("value",s=>{
+    const c=s.val()||{};
+    const nueva=c.name||null;
+    if(nueva!==carreraActiva){ carreraActiva=nueva; render(); }
+  },()=>{});
+}
 
 // --- Estado ---
 const LS_SETUP="ch_setup", LS_QUEUE="ch_queue";
@@ -105,6 +122,7 @@ let clockOffset = 0;                  // ms a sumar al reloj local para obtener 
 let clockState = "pending";           // pending | ok | warn | bad
 let dorsalActual = "";
 let promptInstalar = null;   // evento de instalación (Chrome/Android)
+let codigoRechazado = false; // el servidor rechazó el código de acceso
 
 function load(k){ try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;} }
 function save(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} }
@@ -151,7 +169,9 @@ function fichar(dorsal, horaMs){
 // --- Sincronización de la cola a Firebase ---
 let syncing=false;
 function sincronizar(){
-  if(!db || !connected || syncing || !setup) return;
+  // No exigimos `connected`: intentamos siempre. Si hay red, sube; si no, falla
+  // y se reintenta luego. Evita bloquearse por un indicador con falsos negativos.
+  if(!db || syncing || !setup) return;
   const pend = queue.filter(f=>!f.synced && !f.anulado);
   if(!pend.length) return;
   syncing=true;
@@ -159,13 +179,22 @@ function sincronizar(){
   Promise.all(pend.map(f=>{
     return ref.push({
       dorsal:f.dorsal, horaMs:f.horaMs,
-      stage:setup.stage||null, ctrl:setup.ctrl||null,
+      ctrl:setup.ctrl||null,
       comisario:setup.comisario||null, anulado:false,
+      codigo:setup.codigo||"",
       ts: firebase.database.ServerValue.TIMESTAMP,
     }).then(()=>{ f.synced=true; });
   })).then(()=>{
+    ultimaSubidaOk=Date.now();
+    codigoRechazado=false;
     save(LS_QUEUE, queue); syncing=false; render();
-  }).catch(e=>{ console.warn("sync",e.message); syncing=false; });
+  }).catch(e=>{
+    // PERMISSION_DENIED = código incorrecto (las reglas lo rechazan)
+    if(String(e.message||"").toUpperCase().includes("PERMISSION")){
+      codigoRechazado=true;
+    }
+    console.warn("sync",e.message); syncing=false; render();
+  });
 }
 // Reintento periódico de sincronización (por si vuelve la cobertura)
 setInterval(sincronizar, 8000);
@@ -214,16 +243,18 @@ function pantallaSetup(){
     <header><div><div class="t">Control Horario</div><div class="sub">Configuración inicial</div></div></header>
     <main class="setup">
       <div class="card">
-        <label>Nombre del control (para identificarlo)</label>
-        <input id="s_nombre" placeholder="Ej: CH2 Bosque" value="${s.nombre||''}">
-        <div class="mini" style="margin-top:0.3rem">Este nombre te ayuda a ti; el central lo reconoce por crono/vuelta/control.</div>
+        <label>Código de acceso</label>
+        <input id="s_codigo" type="text" inputmode="numeric" placeholder="El que te den hoy" value="${s.codigo||''}">
+        <div class="mini" style="margin-top:0.3rem">Te lo facilita la organización el día de la carrera. Sin él no se pueden enviar fichajes.</div>
       </div>
       <div class="card">
         <div class="row">
-          <div><label>Crono</label><input id="s_stage" type="number" min="1" max="9" placeholder="1" value="${s.stage||''}"></div>
-          <div><label>CH nº</label><input id="s_ctrl" type="number" min="1" max="9" placeholder="1" value="${s.ctrl||''}"></div>
+          <div style="flex:2"><label>Nombre del control</label>
+            <input id="s_nombre" placeholder="Ej: CH2 Bosque" value="${s.nombre||''}"></div>
+          <div style="flex:1"><label>CH nº</label>
+            <input id="s_ctrl" type="number" min="1" max="20" placeholder="1" value="${s.ctrl||''}"></div>
         </div>
-        <div class="mini" style="margin-top:0.5rem">Indica a qué crono perteneces y qué número de CH eres. La vuelta NO se elige: el programa la deduce solo, para evitar confusiones cuando llegan pilotos de vueltas distintas mezclados.</div>
+        <div class="mini" style="margin-top:0.5rem">El número de CH identifica este control en toda la carrera. La vuelta NO se elige: el programa la deduce solo, para evitar confusiones cuando llegan pilotos de vueltas distintas mezclados.</div>
       </div>
       <div class="card">
         <label>Tu nombre (comisario) — opcional</label>
@@ -246,18 +277,28 @@ function clockBadge(){
 
 function pantallaFichar(){
   const pend = queue.filter(f=>!f.synced).length;
+  const online = hayConexion();
   return `
   <div class="wrap">
     <header>
-      <div><div class="t">${setup.nombre||'Control'}</div>
-      <div class="sub">C${setup.stage||'?'} · CH${setup.ctrl||'?'}${setup.comisario?' · '+setup.comisario:''}</div></div>
+      <div style="min-width:0">
+        <div class="t">${setup.nombre||'Control'}</div>
+        <div class="sub">CH${setup.ctrl||'?'}${setup.comisario?' · '+setup.comisario:''}</div>
+        <div class="sub" style="color:var(--cyan);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${carreraActiva?('🏁 '+carreraActiva):'<span style="color:var(--amber)">⚠ sin carrera activa</span>'}
+        </div>
+      </div>
       <div class="clock"><div class="h" id="liveclock">${fmtHora(horaOficialMs())}</div>
         <div class="s">${clockBadge()}</div></div>
     </header>
     <main>
-      ${!connected ? `<div class="banner b-off">📴 Sin conexión — fichando en local (${pend} sin subir). Se sincronizará solo al recuperar señal.</div>`
-                   : pend>0 ? `<div class="banner b-off">Subiendo ${pend} fichaje(s)…</div>`
-                   : `<div class="banner b-on">✓ En línea y sincronizado</div>`}
+      ${codigoRechazado ? `<div class="banner b-off" style="background:rgba(200,30,30,0.18);color:var(--red);border-color:var(--red)">
+             ⛔ Código de acceso incorrecto — los fichajes NO se están subiendo.<br>
+             <span style="font-weight:400;font-size:0.66rem">Pulsa "⚙ Cambiar control" y corrige el código. Lo fichado se conserva.</span>
+           </div>` : ''}
+      ${!online ? `<div class="banner b-off">📴 Sin conexión — fichando en local (${pend} sin subir). Se sincronizará solo al recuperar señal.</div>`
+                : pend>0 ? `<div class="banner b-off">Subiendo ${pend} fichaje(s)…</div>`
+                : `<div class="banner b-on">✓ En línea y sincronizado</div>`}
       <div class="card">
         <label>Dorsal</label>
         <input class="dorsalIn" id="dorsalIn" inputmode="numeric" pattern="[0-9]*"
@@ -300,12 +341,13 @@ setInterval(()=>{
 
 // --- Handlers globales ---
 window.guardarSetup=function(){
-  const g=id=>document.getElementById(id).value.trim();
-  const nombre=g("s_nombre"), stage=parseInt(g("s_stage"))||null,
+  const g=id=>{const el=document.getElementById(id);return el?el.value.trim():"";};
+  const codigo=g("s_codigo"), nombre=g("s_nombre"),
         ctrl=parseInt(g("s_ctrl"))||null, comisario=g("s_comisario");
-  if(!stage||!ctrl){ alert("Indica crono y número de CH."); return; }
-  const controlId=`c${stage}_ch${ctrl}`;
-  setup={ controlId, nombre:nombre||`C${stage}CH${ctrl}`, stage, ctrl, comisario };
+  if(!codigo){ alert("Introduce el código de acceso que te ha dado la organización."); return; }
+  if(!ctrl){ alert("Indica el número de CH."); return; }
+  const controlId=`ch${ctrl}`;
+  setup={ controlId, nombre:nombre||`CH${ctrl}`, ctrl, comisario, codigo };
   save(LS_SETUP, setup);
   pushPresencia();
   pedirWakeLock();
@@ -335,7 +377,7 @@ window.cambiarControl=function(){
 // --- Service worker: requisito para instalar como app en Android ---
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{
-    navigator.serviceWorker.register("./sw-ch.js").catch(e=>console.warn("SW",e.message));
+    navigator.serviceWorker.register("./sw-ch.js",{scope:"./control-horario.html"}).catch(e=>console.warn("SW",e.message));
   });
 }
 
@@ -375,6 +417,7 @@ document.addEventListener("visibilitychange",()=>{
 
 // --- Arranque ---
 initClockSync();
+escucharCarrera();
 render();
 sincronizar();
 if(setup)pedirWakeLock();
