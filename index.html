@@ -658,11 +658,15 @@ function buildResults(schedule, cfg, timing, stageData) {
         const exp = cur + getChTime(r, cfg, lap, ctrl)*60;
         const stored = rt[`${lap}-${ctrl}`];
         const actual = stored ? parseT(stored.actual) : null;
-        const diff = actual != null ? actual - exp : 0;
+        // Penalización AL MINUTO (regla de enduro): entrar en cualquier segundo
+        // del minuto previsto no penaliza. Igual que en la app central.
+        const alMinuto = (s) => Math.floor(s/60)*60;
+        const diff = actual != null ? (alMinuto(actual) - alMinuto(exp)) : 0;
         chExpected[`${lap}-${ctrl}`] = exp;
         chPens[`${lap}-${ctrl}`] = Math.abs(diff);
         tcPen += Math.abs(diff);
-        cur = actual != null ? actual : exp;
+        // Encadenado AL MINUTO (igual que la app central).
+        cur = actual != null ? alMinuto(actual) : exp;
       }
     }
     const actualStart = parseT(rt.actualStart);
