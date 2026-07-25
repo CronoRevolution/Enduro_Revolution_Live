@@ -238,6 +238,10 @@ font-size:0.65rem;color:var(--dim)}
 .welcome-card-arrow{align-self:flex-end;font-size:1rem;color:var(--dim);margin-top:8px}
 .welcome-card-livedot{display:inline-block;width:8px;height:8px;border-radius:50%;
   background:#4eff4e;margin-right:6px;animation:pulse 1.5s infinite;vertical-align:middle}
+.welcome-recargar{display:block;width:100%;margin-top:10px;background:transparent;
+  border:1px solid var(--border,#2b2b34);color:var(--dim,#94a3b8);border-radius:8px;
+  padding:10px;font-size:0.78rem;font-family:inherit;cursor:pointer;}
+.welcome-recargar:active{background:rgba(255,255,255,0.05);}
 .welcome-footer{margin-top:auto;padding:16px 0 8px;text-align:center;
   font-size:0.6rem;color:var(--dim);opacity:0.7}
 </style>
@@ -278,6 +282,10 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeCurrentName">Cargando…</div>
       <div class="welcome-card-meta" id="welcomeCurrentMeta"></div>
+      <div class="welcome-card-meta" id="welcomeCurrentSrc" style="margin-top:4px;font-size:0.72rem"></div>
+    </button>
+    <button class="welcome-recargar" onclick="recargarTodo(event)">
+      ↻ ¿No ves la prueba correcta? Recargar
     </button>
     <button class="welcome-card archive" id="welcomeArchive" onclick="enterArchive()">
       <div class="welcome-card-header">
@@ -748,7 +756,43 @@ function renderWelcome() {
   document.getElementById('welcomeCurrentName').textContent = name;
   const meta = [date, active ? active + ' pilotos' : ''].filter(Boolean).join(' · ');
   document.getElementById('welcomeCurrentMeta').textContent = meta;
+  // Indicar de dónde vienen los datos: si no hay tiempo real, puede estarse
+  // mostrando una copia antigua servida por caché.
+  const s = document.getElementById('welcomeCurrentSrc');
+  if (s) {
+    if (gFirebaseActive) {
+      s.textContent = '⚡ En tiempo real';
+      s.style.color = 'var(--green, #22c55e)';
+    } else {
+      s.textContent = '📡 Copia guardada — puede no estar al día';
+      s.style.color = 'var(--amber, #f59e0b)';
+    }
+  }
 }
+
+// Recarga a fondo: borra cachés y service workers y vuelve a pedir los datos.
+// Resuelve el caso de un móvil que se ha quedado con una prueba antigua.
+window.recargarTodo = async function(ev){
+  if (ev) ev.stopPropagation();
+  const btn = ev && ev.currentTarget;
+  if (btn) { btn.textContent = '↻ Recargando…'; btn.disabled = true; }
+  try {
+    if (window.caches && caches.keys) {
+      const ks = await caches.keys();
+      await Promise.all(ks.map(k => caches.delete(k)));
+    }
+  } catch(e) {}
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch(e) {}
+  // Recargar saltando la caché del navegador
+  const u = new URL(window.location.href);
+  u.searchParams.set('_r', Date.now());
+  window.location.replace(u.toString());
+};
 
 function enterCurrent() {
   // Abortar cualquier carga de archivo en curso
