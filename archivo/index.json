@@ -1,6 +1,20 @@
 {
   "races": [
     {
+      "path": "archivo/2026/2026-06-27-enduro-sprint-requejo-2026.json",
+      "name": "Enduro Sprint Requejo 2026",
+      "date": "2026-06-27",
+      "year": "2026",
+      "organizer": "FMCL",
+      "campeonatos": [
+        "Campeonato de Enduro de Castilla y León",
+        "Campeonato de Enduro de Cantabria",
+        "Campeonato de Enduro de Euskadi"
+      ],
+      "riders": 52,
+      "archivedAt": "2026-07-25T22:35:29.310Z"
+    },
+    {
       "path": "archivo/2026/2026-05-16-xiii-enduro-de-ereno.json",
       "name": "XIII Enduro de Ereño",
       "date": "2026-05-16",
