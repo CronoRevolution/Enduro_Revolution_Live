@@ -294,7 +294,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v3.0 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v3.1 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -400,6 +400,7 @@ let gAgeTimer = null;
 // Complementa el polling a GitHub (que sigue como fallback). Si Firebase
 // está disponible, los datos llegan por listener onValue() en tiempo real.
 let gFirebaseActive = false;
+let gFirebaseHasData = false;   // Firebase ha entregado datos de verdad
 let gFirebaseRef = null;
 try {
   if (typeof firebase !== 'undefined' && firebase.initializeApp) {
@@ -425,6 +426,7 @@ try {
         gLastFetchTs = Date.now();
         gFailStreak = 0;
         gFirebaseActive = true;
+        gFirebaseHasData = true;
         setStatus('live');
         updateAge();
         renderAll();
@@ -434,6 +436,7 @@ try {
     }, (error) => {
       console.warn('Firebase listener error:', error);
       gFirebaseActive = false;
+      gFirebaseHasData = false;
     });
     gFirebaseActive = true;
   }
@@ -473,6 +476,18 @@ async function fetchData() {
     if (!resp.ok) throw new Error(resp.status);
     gLastEtag = resp.headers.get('ETag');
     const raw = await resp.json();
+
+    // Firebase MANDA. Este fetch a GitHub es solo un respaldo por si Firebase
+    // no está disponible; si lo está, no debe pisar los datos en vivo, porque
+    // el live.json publicado puede ser de una carrera anterior.
+    if (gFirebaseActive && gFirebaseHasData) {
+      gLastFetchTs = Date.now();
+      gFailStreak = 0;
+      setStatus('live');
+      updateAge();
+      return;
+    }
+
     const changed = JSON.stringify(raw) !== JSON.stringify(gData);
     gData = raw;
     gLastFetchTs = Date.now();
@@ -509,7 +524,7 @@ function setStatus(s) {
   // Indicador de fuente de datos: ⚡ Firebase en tiempo real / 📡 GitHub polling
   const src = document.getElementById('dataSource');
   if (src) {
-    if (gFirebaseActive && s === 'live') {
+    if (gFirebaseActive && gFirebaseHasData && s === 'live') {
       src.textContent = '⚡ Tiempo real';
       src.style.color = 'var(--green, #22c55e)';
     } else if (s === 'live') {
@@ -760,7 +775,7 @@ function renderWelcome() {
   // mostrando una copia antigua servida por caché.
   const s = document.getElementById('welcomeCurrentSrc');
   if (s) {
-    if (gFirebaseActive) {
+    if (gFirebaseActive && gFirebaseHasData) {
       s.textContent = '⚡ En tiempo real';
       s.style.color = 'var(--green, #22c55e)';
     } else {
