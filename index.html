@@ -294,7 +294,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v3.1 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v3.2 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -427,6 +427,8 @@ try {
         gFailStreak = 0;
         gFirebaseActive = true;
         gFirebaseHasData = true;
+        // Ya tenemos datos en vivo: detener el respaldo para que no los pise.
+        try { schedulePoll(); } catch(e) {}
         setStatus('live');
         updateAge();
         renderAll();
@@ -437,6 +439,7 @@ try {
       console.warn('Firebase listener error:', error);
       gFirebaseActive = false;
       gFirebaseHasData = false;
+      try { schedulePoll(); } catch(e) {}   // volver a usar el respaldo
     });
     gFirebaseActive = true;
   }
@@ -1449,12 +1452,12 @@ window.addEventListener('popstate', (e) => {
 // ── Init ───────────────────────────────────────────────────────────────────
 // Función para (re)programar el timer según visibilidad
 function schedulePoll() {
-  if (gPollTimer) clearInterval(gPollTimer);
-  // Si Firebase está activo, el polling a GitHub es solo fallback (cada 60s).
-  // Si no, mantiene el ritmo normal (8s visible / 30s oculto).
-  const ms = gFirebaseActive
-    ? 60000
-    : (document.visibilityState === 'visible' ? POLL_MS_VISIBLE : POLL_MS_HIDDEN);
+  if (gPollTimer) { clearInterval(gPollTimer); gPollTimer = null; }
+  // Si Firebase está entregando datos en vivo, NO consultamos GitHub en
+  // absoluto: su live.json puede ser de una carrera anterior y no debe
+  // interferir. El respaldo solo entra en juego si Firebase no responde.
+  if (gFirebaseActive && gFirebaseHasData) return;
+  const ms = (document.visibilityState === 'visible') ? POLL_MS_VISIBLE : POLL_MS_HIDDEN;
   gPollTimer = setInterval(fetchData, ms);
 }
 

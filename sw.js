@@ -11,7 +11,7 @@
 //   - Datos en vivo (live.json, índice, archivo/*.json): network-first.
 //   - Iconos / imágenes: cache-first.
 
-const CACHE_NAME = "enduro-clasif-v8";
+const CACHE_NAME = "enduro-clasif-v9";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 // Rutas que este SW NO debe tocar nunca (tienen su propio ciclo de vida).
@@ -72,7 +72,11 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // Shell HTML/CSS/JS: stale-while-revalidate
+  // Shell HTML/CSS/JS: RED PRIMERO, caché como respaldo.
+  // Antes era "stale-while-revalidate" (caché primero), y eso hacía que tras
+  // publicar una versión nueva el móvil siguiera usando la antigua hasta la
+  // siguiente visita. Con red primero, una actualización se ve al instante y
+  // la caché solo entra si no hay cobertura.
   const isShell = path.endsWith(".html")
                || path.endsWith("/")
                || path.endsWith("manifest.json")
@@ -81,16 +85,13 @@ self.addEventListener("fetch", event => {
 
   if (isShell) {
     event.respondWith(
-      caches.match(event.request).then(cached => {
-        const fetchPromise = fetch(event.request).then(resp => {
-          if (resp.ok) {
-            const copy = resp.clone();
-            caches.open(CACHE_NAME).then(c => c.put(event.request, copy)).catch(() => {});
-          }
-          return resp;
-        }).catch(() => cached);
-        return cached || fetchPromise;
-      })
+      fetch(event.request).then(resp => {
+        if (resp.ok) {
+          const copy = resp.clone();
+          caches.open(CACHE_NAME).then(c => c.put(event.request, copy)).catch(() => {});
+        }
+        return resp;
+      }).catch(() => caches.match(event.request).then(r => r || caches.match("./")))
     );
     return;
   }
