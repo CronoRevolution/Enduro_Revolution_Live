@@ -601,6 +601,9 @@ function fmtHHMM(s) {
 }
 
 function getNumLaps(rider, cfg) {
+  // Excepción por piloto (grupos que hacen distintas vueltas que su categoría)
+  const propio = parseInt(rider && rider.numLaps || "");
+  if (propio > 0) return propio;
   const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
   const v = cat && cat.numLaps;
   try { return v ? parseInt(v) : parseInt(cfg.numLaps||1); } catch(e) { return 1; }
@@ -659,6 +662,13 @@ function computeSchedule(riders, cfg) {
   for (let idx = 0; idx < ordered.length; idx++) {
     const rider = ordered[idx];
     if (idx > 0 && Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
+    // Hora congelada por el cronometrador: manda sobre el cálculo automático.
+    const fija = rider._startFixed;
+    if (fija != null && !isNaN(parseInt(fija))) {
+      const f = parseInt(fija);
+      result.push({ ...rider, startSecs: f, startStr: fmtHHMM(f) });
+      continue;
+    }
     const offset = rider._startOffset || 0;
     result.push({ ...rider, startSecs: cursor+offset, startStr: fmtHHMM(cursor+offset) });
   }
