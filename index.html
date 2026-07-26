@@ -294,7 +294,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v3.2 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v3.3 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -1524,7 +1524,15 @@ document.addEventListener('visibilitychange', () => {
 // ── Detección de build obsoleto vs servidor ────────────────────────────────
 // Aparte del SW, hacemos una comprobación periódica: si el HTML del servidor
 // tiene una versión distinta a la nuestra, ofrecemos recargar.
-const LOCAL_BUILD = 'v3.0';
+// La versión se LEE del pie de página, no se escribe aquí a mano: así no puede
+// quedarse desfasada y provocar avisos de "nueva versión" permanentes.
+const LOCAL_BUILD = (function(){
+  try{
+    var el=document.querySelector('.welcome-footer');
+    var m=el && el.textContent.match(/v(\d+\.\d+)/);
+    return m ? ('v'+m[1]) : null;
+  }catch(e){ return null; }
+})();
 async function checkForNewerBuild() {
   try {
     // Fetch bypassing all caches
@@ -1533,14 +1541,17 @@ async function checkForNewerBuild() {
     });
     if (!resp.ok) return;
     const txt = await resp.text();
+    if (!LOCAL_BUILD) return;              // sin versión local, no comparamos
     const m = txt.match(/v(\d+\.\d+)\s*·\s*Enduro Revolution/);
-    if (m && m[0] && !m[0].includes(LOCAL_BUILD)) {
-      // Hay build más nueva en el servidor
-      showUpdateBanner(m[0]);
-    }
+    if (!m) return;
+    const servidor = 'v' + m[1];
+    // Solo avisamos si de verdad son distintas (comparación exacta).
+    if (servidor !== LOCAL_BUILD) showUpdateBanner(servidor);
   } catch (e) { /* sin red, ignorar */ }
 }
+let avisoDescartado = false;
 function showUpdateBanner(serverBuild) {
+  if (avisoDescartado) return;                       // el usuario dijo "ahora no"
   if (document.getElementById('updateBanner')) return;
   const bar = document.createElement('div');
   bar.id = 'updateBanner';
@@ -1548,9 +1559,14 @@ function showUpdateBanner(serverBuild) {
     'padding:10px 14px;font-size:0.78rem;font-weight:700;z-index:9999;display:flex;' +
     'align-items:center;gap:10px;box-shadow:0 -2px 10px rgba(0,0,0,0.4)';
   bar.innerHTML = '<span style="flex:1">🔄 Nueva versión disponible</span>' +
-    '<button style="background:#000;color:#4eff4e;border:0;padding:6px 12px;border-radius:4px;' +
-    'font-weight:700;font-family:inherit;font-size:0.78rem;cursor:pointer">Actualizar</button>';
-  bar.querySelector('button').onclick = async () => {
+    '<button id="updBtn" style="background:#000;color:#4eff4e;border:0;padding:6px 12px;border-radius:4px;' +
+    'font-weight:700;font-family:inherit;font-size:0.78rem;cursor:pointer">Actualizar</button>' +
+    '<button id="updClose" title="Ahora no" style="background:transparent;color:#000;border:0;' +
+    'padding:6px 8px;font-weight:700;font-size:1rem;cursor:pointer">✕</button>';
+  // Permitir descartarlo: si el espectador está mirando la clasificación en
+  // plena carrera, no debe verse obligado a recargar en ese momento.
+  bar.querySelector('#updClose').onclick = () => { bar.remove(); avisoDescartado = true; };
+  bar.querySelector('#updBtn').onclick = async () => {
     // Desregistrar SW y limpiar cachés antes de recargar
     if ('serviceWorker' in navigator) {
       const regs = await navigator.serviceWorker.getRegistrations();
