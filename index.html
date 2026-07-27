@@ -284,6 +284,25 @@ font-size:0.65rem;color:var(--dim)}
       <div class="welcome-card-meta" id="welcomeCurrentMeta"></div>
       <div class="welcome-card-meta" id="welcomeCurrentSrc" style="margin-top:4px;font-size:0.72rem"></div>
     </button>
+    <div id="instalarBox" style="display:none;margin-top:12px;padding:12px;border-radius:10px;
+      background:rgba(232,35,26,0.10);border:1px solid rgba(232,35,26,0.45)">
+      <div style="font-weight:800;font-size:0.86rem;color:#ff6b6b;margin-bottom:4px">
+        📲 Instala la app
+      </div>
+      <div id="instalarTexto" style="font-size:0.76rem;color:var(--dim,#94a3b8);line-height:1.45"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="instalarBtn" onclick="instalarApp(event)"
+          style="flex:1;background:#e8231a;color:#fff;border:0;border-radius:8px;padding:10px;
+                 font-weight:800;font-size:0.82rem;font-family:inherit;cursor:pointer">
+          Instalar
+        </button>
+        <button onclick="ocultarInstalar(event)"
+          style="background:transparent;color:var(--dim,#94a3b8);border:1px solid var(--border,#2b2b34);
+                 border-radius:8px;padding:10px 14px;font-size:0.78rem;font-family:inherit;cursor:pointer">
+          Ahora no
+        </button>
+      </div>
+    </div>
     <button class="welcome-recargar" onclick="recargarTodo(event)">
       ↻ ¿No ves la prueba correcta? Recargar
     </button>
@@ -294,7 +313,7 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
-    <div class="welcome-footer">v3.3 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v3.4 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -424,6 +443,12 @@ try {
           if (!gViewingArchive) {
             gData = null;
             gFirebaseHasData = false;
+            // Reactivar el respaldo: si no, nunca se vuelve a consultar GitHub
+            // y el móvil se queda sin saber si aparece una carrera nueva.
+            try { schedulePoll(); } catch(e) {}
+            // Si estaba viendo la clasificación de la carrera retirada, se le
+            // devuelve al inicio: esa clasificación ya no está en curso.
+            if (gView === 'cats') { try { showView('welcome'); } catch(e) {} }
             renderWelcome();
           }
           return;
@@ -501,6 +526,17 @@ async function fetchData() {
       return;
     }
 
+    // Payload vacío publicado a propósito: la carrera se archivó y se retiró
+    // del directo. Se trata como "no hay ninguna prueba en curso".
+    if (raw && raw.raceState === 'none' && !(raw.config && raw.config.name)) {
+      gData = null;
+      gLastFetchTs = Date.now();
+      gFailStreak = 0;
+      setStatus('live');
+      if (gView === 'cats') { try { showView('welcome'); } catch(e) {} }
+      renderWelcome();
+      return;
+    }
     const changed = JSON.stringify(raw) !== JSON.stringify(gData);
     gData = raw;
     gLastFetchTs = Date.now();
@@ -985,6 +1021,72 @@ function renderWelcome() {
 
 // Recarga a fondo: borra cachés y service workers y vuelve a pedir los datos.
 // Resuelve el caso de un móvil que se ha quedado con una prueba antigua.
+// ── Instalación como app ───────────────────────────────────────────────────
+// En Android, Chrome avisa con "beforeinstallprompt" cuando la web cumple los
+// requisitos de PWA; capturamos el evento y lo lanzamos cuando el usuario pulsa.
+// En iOS no existe ese evento: Apple obliga a hacerlo a mano desde Compartir,
+// así que ahí mostramos las instrucciones en vez de un botón.
+let promptInstalacion = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  promptInstalacion = e;
+  mostrarInstalar('android');
+});
+
+function yaInstalada(){
+  try{
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+  }catch(e){ return false; }
+}
+function esIOS(){
+  try{ return /iphone|ipad|ipod/i.test(navigator.userAgent); }catch(e){ return false; }
+}
+function instalarDescartado(){
+  try{ return localStorage.getItem('er_instalar_no') === '1'; }catch(e){ return false; }
+}
+
+function mostrarInstalar(tipo){
+  if (yaInstalada() || instalarDescartado()) return;
+  const box = document.getElementById('instalarBox');
+  const txt = document.getElementById('instalarTexto');
+  const btn = document.getElementById('instalarBtn');
+  if (!box) return;
+  if (tipo === 'ios') {
+    txt.innerHTML = 'Para tenerla como una app: pulsa <b>Compartir</b> '
+      + '<span style="font-size:1rem">&#x2934;</span> y luego '
+      + '<b>Añadir a pantalla de inicio</b>.';
+    btn.style.display = 'none';
+  } else {
+    txt.textContent = 'Se abre a pantalla completa, carga más rápido y funciona '
+      + 'aunque la cobertura falle un momento.';
+    btn.style.display = '';
+  }
+  box.style.display = 'block';
+}
+
+window.instalarApp = async function(ev){
+  if (ev) ev.stopPropagation();
+  if (!promptInstalacion) return;
+  promptInstalacion.prompt();
+  try{ await promptInstalacion.userChoice; }catch(e){}
+  promptInstalacion = null;
+  const box = document.getElementById('instalarBox');
+  if (box) box.style.display = 'none';
+};
+
+window.ocultarInstalar = function(ev){
+  if (ev) ev.stopPropagation();
+  try{ localStorage.setItem('er_instalar_no','1'); }catch(e){}
+  const box = document.getElementById('instalarBox');
+  if (box) box.style.display = 'none';
+};
+
+// iOS no dispara ningún evento: si es iPhone/iPad y no está instalada,
+// enseñamos las instrucciones a los pocos segundos de abrir.
+setTimeout(() => { if (esIOS()) mostrarInstalar('ios'); }, 2500);
+
 window.recargarTodo = async function(ev){
   if (ev) ev.stopPropagation();
   const btn = ev && ev.currentTarget;
