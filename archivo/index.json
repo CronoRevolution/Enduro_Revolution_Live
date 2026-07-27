@@ -1,6 +1,23 @@
 {
   "races": [
     {
+      "path": "archivo/2026/2026-07-26-xi-enduro-cueva-del-oso.json",
+      "name": "XI Enduro Cueva del Oso",
+      "date": "2026-07-26",
+      "year": "2026",
+      "organizer": "FMCL",
+      "campeonatos": [
+        "Campeonato de Enduro de Castilla y León",
+        "Campeonato de Enduro de Cantabria",
+        "Campeonato de Enduro de Euskadi",
+        "Campeonato de Enduro de Asturias",
+        "Campeonato de Enduro de Navarra",
+        "Campeonato de Enduro de Madrid"
+      ],
+      "riders": 91,
+      "archivedAt": "2026-07-27T17:50:39.336Z"
+    },
+    {
       "path": "archivo/2026/2026-06-27-enduro-sprint-requejo-2026.json",
       "name": "Enduro Sprint Requejo 2026",
       "date": "2026-06-27",
