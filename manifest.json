@@ -1,14 +1,26 @@
 {
-  "name": "Enduro Revolution",
-  "short_name": "Enduro Revolution",
-  "description": "Clasificación en vivo de la prueba de enduro",
+  "id": "/ch/",
+  "name": "Control Horario · Enduro Revolution",
+  "short_name": "Control CH",
+  "description": "Fichaje de paso por control horario para comisarios de enduro",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0d0d10",
-  "theme_color": "#c00000",
+  "background_color": "#0c0c0f",
+  "theme_color": "#c81e1e",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }

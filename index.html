@@ -417,7 +417,17 @@ try {
     gFirebaseRef.on('value', (snapshot) => {
       try {
         const raw = snapshot.val();
-        if (!raw) return; // nodo vacío, nada que hacer
+        if (!raw) {
+          // El cronometrador ha retirado la carrera del directo (ya archivada).
+          // No queda ninguna prueba en curso: se refleja en la pantalla de
+          // inicio en vez de seguir mostrando la última como si estuviera viva.
+          if (!gViewingArchive) {
+            gData = null;
+            gFirebaseHasData = false;
+            renderWelcome();
+          }
+          return;
+        }
         // Solo actualizar si estamos viendo datos LIVE (no un archivo histórico)
         if (gViewingArchive) return;
         const changed = JSON.stringify(raw) !== JSON.stringify(gData);
@@ -569,16 +579,7 @@ function showToast(msg) {
 }
 
 // ── Parsers / helpers ─────────────────────────────────────────────────────
-function parseT(s) {
-  if (!s) return null;
-  s = String(s).trim();
-  const p = s.split(':');
-  try {
-    if (p.length === 3) return +p[0]*3600 + +p[1]*60 + +p[2];
-    if (p.length === 2) return s.includes('.') ? +p[0]*60 + +p[1] : +p[0]*3600 + +p[1]*60;
-  } catch(e) {}
-  return null;
-}
+
 
 function fmtT(s) {
   if (!s) return '—';
@@ -594,86 +595,260 @@ function fmtPen(s) {
   return `${Math.floor(a/60)}'${String(a%60).padStart(2,'0')}"`;
 }
 
-function fmtHHMM(s) {
-  if (!s) return '—';
-  const a = Math.floor(s) % 86400;
-  return `${String(Math.floor(a/3600)).padStart(2,'0')}:${String(Math.floor((a%3600)/60)).padStart(2,'0')}`;
-}
 
-function getNumLaps(rider, cfg) {
-  // Excepción por piloto (grupos que hacen distintas vueltas que su categoría)
-  const propio = parseInt(rider && rider.numLaps || "");
-  if (propio > 0) return propio;
-  const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
-  const v = cat && cat.numLaps;
-  try { return v ? parseInt(v) : parseInt(cfg.numLaps||1); } catch(e) { return 1; }
-}
+
+
 
 // Nº de vueltas con control horario. Si la categoría define chLaps, solo las
 // primeras chLaps vueltas tienen CH; el resto se cronometran SIN CH. Igual que la app central.
-function getCHLaps(rider, cfg) {
-  const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
-  const v = parseInt(cat && cat.chLaps || '');
-  const nL = getNumLaps(rider, cfg);
-  return (v > 0) ? Math.min(v, nL) : nL;
-}
-function lapHasCH(rider, cfg, lap) { return lap <= getCHLaps(rider, cfg); }
 
-function getChTime(rider, cfg, lap, ctrl) {
-  const k = `${lap}-${ctrl}`;
-  const cat = (cfg.categories||[]).find(c => c.name === rider.categoria);
-  if (cat && cat.chtimes && cat.chtimes[k] != null) return parseFloat(cat.chtimes[k]);
-  const v = cfg.defaultCHTimes && cfg.defaultCHTimes[k];
-  return v != null ? parseFloat(v) : 30;
-}
 
-function stageScores(cfg, s, l, cat) {
-  if (cat) { const v = cat.stageScoring && cat.stageScoring[`s${s}-l${l}`]; if (v != null) return !!v; }
-  const v = cfg.stageScoring && cfg.stageScoring[`s${s}-l${l}`];
-  return v == null ? true : !!v;
-}
 
-function computeSchedule(riders, cfg) {
-  const cats = cfg.categories || [];
-  const catOrd = cats.map(c => c.name);
-  const groups = {}; catOrd.forEach(n => groups[n] = []);
-  const unknown = [];
-  riders.forEach(r => {
-    (groups[r.categoria] !== undefined ? groups[r.categoria] : unknown).push(r);
+
+
+
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NÚCLEO DE CÁLCULO — Enduro Revolution
+   ---------------------------------------------------------------------------
+   ÚNICA fuente de verdad para horarios, penalizaciones y reglas de puntuación.
+
+   Este bloque se inserta TAL CUAL en los tres programas:
+       · enduro-revolution.html      (app central)
+       · clasificacion-detallada.html (segunda pantalla)
+       · index.html                   (clasificación para el público)
+
+   Durante mucho tiempo cada uno tuvo su propia copia y las diferencias entre
+   ellas provocaron errores reales en carrera: horas distintas según la
+   pantalla, penalizaciones que no coincidían, vueltas descuadradas. Teniendo
+   un solo original, eso no puede volver a ocurrir.
+
+   NO EDITAR ESTE BLOQUE DENTRO DE UN HTML. Se edita en nucleo-calculo.js y se
+   vuelve a insertar en los tres. Cualquier cambio suelto se perderá.
+
+   Reglas de enduro que implementa:
+     · Las penalizaciones de control horario se cuentan POR MINUTOS COMPLETOS:
+       entrar en cualquier segundo del minuto previsto no penaliza.
+     · El encadenado de horas previstas también trunca al minuto.
+     · Los pilotos que no salen ocupan su hueco en el horario: si se les quita,
+       todos los que salen después se adelantan indebidamente.
+     · Un piloto puede llevar un número de vueltas propio, distinto al de su
+       categoría (grupos que corren una vuelta menos).
+     · Opcionalmente, el último control horario de cada piloto no penaliza por
+       adelantarse: con su carrera terminada no tiene sentido hacerle esperar.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const parseT=(str)=>{
+  if(!str)return null;
+  const s=String(str).trim();
+  const parts=s.split(":").map(p=>parseFloat(p));
+  if(parts.some(isNaN))return null;
+  if(parts.length===3)return parts[0]*3600+parts[1]*60+parts[2];
+  if(parts.length===2){
+    // Con decimal → tiempo de vuelta en MM:SS.mmm (ej. "1:23.456")
+    // Sin decimal → siempre HH:MM (ej. "10:15")
+    if(s.includes("."))return parts[0]*60+parts[1];
+    return parts[0]*3600+parts[1]*60;
+  }
+  return null;
+};
+
+const fmtHHMM=(s)=>{
+  if(s==null||isNaN(s))return"--:--";
+  const a=((Math.round(s)%86400)+86400)%86400;
+  return`${Math.floor(a/3600).toString().padStart(2,"0")}:${Math.floor((a%3600)/60).toString().padStart(2,"0")}`;
+};
+
+const fmtHHMMSS=(s)=>{
+  if(s==null||isNaN(s))return"--:--:--";
+  const a=((Math.round(s)%86400)+86400)%86400;
+  return`${Math.floor(a/3600).toString().padStart(2,"0")}:${Math.floor((a%3600)/60).toString().padStart(2,"0")}:${(Math.floor(a)%60).toString().padStart(2,"0")}`;
+};
+
+const getNumLaps=(rider,cfg)=>{
+  // Excepción por piloto: permite que un grupo concreto haga más o menos
+  // vueltas que su categoría SIN tocar categorías ni horarios de salida
+  // (el orden de salida no depende del número de vueltas).
+  const propio=parseInt(rider?.numLaps||"");
+  if(propio>0)return propio;
+  const cat=(cfg.categories||[]).find(c=>c.name===rider.categoria);
+  return parseInt(cat?.numLaps||"")||parseInt(cfg.numLaps)||1;
+};
+
+const getCHLaps=(rider,cfg)=>{
+  const cat=(cfg.categories||[]).find(c=>c.name===rider.categoria);
+  const v=parseInt(cat?.chLaps||"");
+  const nL=getNumLaps(rider,cfg);
+  return (v>0)?Math.min(v,nL):nL;
+};
+
+const lapHasCH=(rider,cfg,lap)=>lap<=getCHLaps(rider,cfg);
+
+const getCHTime=(rider,cfg,lap,ctrl)=>{
+  const k=`${lap}-${ctrl}`;
+  const cat=(cfg.categories||[]).find(c=>c.name===rider.categoria);
+  const cv=cat?.chtimes?.[k];if(cv&&!isNaN(parseFloat(cv)))return parseFloat(cv);
+  const gv=cfg.defaultCHTimes?.[k];if(gv&&!isNaN(parseFloat(gv)))return parseFloat(gv);
+  return 30;
+};
+
+const stageScores=(cfg,s,l,cat)=>{
+  // Per-category override first, then global, then default true
+  if(cat?.stageScoring){
+    const v=cat.stageScoring[`s${s}-l${l}`];
+    if(v!==undefined)return!!v;
+  }
+  const v=cfg.stageScoring?.[`s${s}-l${l}`];
+  return v===undefined?true:!!v;
+};
+
+const getActualStart=(rider,timing)=>{
+  const v=timing?.[rider.id]?.actualStart;
+  return v?parseT(v):null;
+};
+
+const getStartPenalty=(rider,timing)=>{
+  const a=getActualStart(rider,timing);
+  return a!=null?Math.max(0,a-rider.startSecs):0;
+};
+
+const computeSchedule=(riders,cfg)=>{
+  if(!riders.length)return[];
+  const cats=cfg.categories||[];
+  const catOrd=cats.map(c=>c.name);
+  const groups={};catOrd.forEach(n=>{groups[n]=[];});
+  const unknown=[];
+  riders.forEach(r=>{
+    if(groups[r.categoria])groups[r.categoria].push(r);else unknown.push(r);
   });
-  const ordered = [];
-  catOrd.forEach(name => {
-    const cat = cats.find(c => c.name === name);
-    const m = [...(groups[name]||[])].sort((a,b) => parseInt(a.dorsal)-parseInt(b.dorsal));
-    if (cat && cat.reverseTop10) {
-      const top = m.filter(r => parseInt(r.dorsal) <= 10).reverse();
-      const rest = m.filter(r => parseInt(r.dorsal) > 10);
-      ordered.push(...top, ...rest);
-    } else ordered.push(...m);
+  const ordered=[];
+  catOrd.forEach(name=>{
+    const cat=cats.find(c=>c.name===name);
+    const members=[...(groups[name]||[])];
+    members.sort((a,b)=>parseInt(a.dorsal,10)-parseInt(b.dorsal,10));
+    if(cat?.reverseTop10){
+      const top=members.filter(r=>parseInt(r.dorsal,10)<=10);
+      const rest=members.filter(r=>parseInt(r.dorsal,10)>10);
+      top.reverse();
+      ordered.push(...top,...rest);
+    }else{ordered.push(...members);}
   });
-  unknown.sort((a,b) => parseInt(a.dorsal)-parseInt(b.dorsal));
+  unknown.sort((a,b)=>parseInt(a.dorsal,10)-parseInt(b.dorsal,10));
   ordered.push(...unknown);
-  const base = parseT(cfg.startTime) || (10*3600+15*60);
-  const cad = (parseInt(cfg.cadence)||1)*60, grp = Math.max(1, parseInt(cfg.groupSize)||1);
-  // Cola continua (igual que la app central): el cambio de categoría NO introduce
-  // salto. Avanza una franja de cadencia cada `grp` pilotos. Aplica _startOffset.
-  const result = [];
-  let cursor = base;
-  for (let idx = 0; idx < ordered.length; idx++) {
-    const rider = ordered[idx];
-    if (idx > 0 && Math.floor(idx/grp) > Math.floor((idx-1)/grp)) cursor += cad;
-    // Hora congelada por el cronometrador: manda sobre el cálculo automático.
-    const fija = rider._startFixed;
-    if (fija != null && !isNaN(parseInt(fija))) {
-      const f = parseInt(fija);
-      result.push({ ...rider, startSecs: f, startStr: fmtHHMM(f) });
+  const base=parseT(cfg.startTime)??(10*3600+15*60);
+  const cad=(parseInt(cfg.cadence)||1)*60;
+  const grp=Math.max(1,parseInt(cfg.groupSize)||1);
+  // Asignar horas de salida en cola continua: el cambio de categoría NO
+  // introduce un salto. Si la cadencia es 1 min y el grupo 2, salen 2 pilotos
+  // por minuto sin interrupción aunque cambie la categoría a mitad del minuto.
+  // El orden de las categorías se mantiene (lo decide `ordered` arriba).
+  const result=[];
+  let cursor=base;
+  for(let idx=0;idx<ordered.length;idx++){
+    const rider=ordered[idx];
+    if(idx>0){
+      // Avanza una franja de cadencia cada `grp` pilotos consecutivos
+      if(Math.floor(idx/grp)>Math.floor((idx-1)/grp)) cursor+=cad;
+    }
+    // Hora CONGELADA: con la carrera ya arrancada, la salida de un piloto no
+    // debe moverse aunque se reorganicen categorías. Si tiene _startFixed, ese
+    // valor manda y el cálculo automático se ignora para él.
+    const fija=rider._startFixed;
+    if(fija!=null&&!isNaN(parseInt(fija))){
+      const f=parseInt(fija);
+      result.push({...rider,startSecs:f,startStr:fmtHHMM(f)});
       continue;
     }
-    const offset = rider._startOffset || 0;
-    result.push({ ...rider, startSecs: cursor+offset, startStr: fmtHHMM(cursor+offset) });
+    const offset=rider._startOffset||0;
+    result.push({...rider,startSecs:cursor+offset,startStr:fmtHHMM(cursor+offset)});
   }
   return result;
-}
+};
+
+const getExpected=(rider,cfg,timing)=>{
+  const nL=getNumLaps(rider,cfg),nC=parseInt(cfg.numTimeControls)||1;
+  // Última vuelta CON control horario de ESTE piloto: puede diferir entre
+  // categorías y, con excepciones individuales, incluso entre pilotos.
+  const ultLapCH=Math.min(getCHLaps(rider,cfg),nL);
+  // ¿Se permite adelantarse sin penalizar en el último CH? Opción de carrera.
+  const sinPenalAdelanto=!!cfg.ultimoCHSinAdelanto;
+  const res={};
+  // Si hay hora real de salida, las horas previstas se recalculan desde ella
+  const base=getActualStart(rider,timing)??rider.startSecs;
+  let cur=base;
+  for(let lap=1;lap<=nL;lap++){
+    if(!lapHasCH(rider,cfg,lap))continue; // vuelta sin control horario: no entra en previstos
+    res[lap]={};
+    for(let ctrl=1;ctrl<=nC;ctrl++){
+      const secTime=getCHTime(rider,cfg,lap,ctrl)*60;
+      const exp=cur+secTime;
+      const stored=timing?.[rider.id]?.[`${lap}-${ctrl}`];
+      const actualSecs=stored?.actual?parseT(stored.actual):null;
+      // PENALIZACIÓN AL MINUTO (regla de enduro): entrar en cualquier segundo
+      // del minuto previsto NO penaliza. Si el CH es a las 10:22, entrar a las
+      // 10:22:00 o a las 10:22:59 es igual de puntual. Por eso comparamos
+      // minutos completos, truncando los segundos de ambas horas.
+      const alMinuto=(s)=>Math.floor(s/60)*60;
+      const diff=actualSecs!=null?(alMinuto(actualSecs)-alMinuto(exp)):0;
+      // ÚLTIMO CH DEL PILOTO: al terminar su carrera no tiene sentido hacerle
+      // esperar, así que si está activado se permite adelantarse sin penalizar
+      // (llegar tarde sí penaliza). Cada piloto tiene su propio "último CH":
+      // depende de sus vueltas con CH, que varían por categoría e incluso por
+      // excepción individual.
+      const esUltimoCH=(lap===ultLapCH&&ctrl===nC);
+      const penal=(esUltimoCH&&sinPenalAdelanto)?Math.max(0,diff):Math.abs(diff);
+      res[lap][ctrl]={expected:exp,actualSecs,actualStr:stored?.actual||"",
+        penalty:penal,diff,entered:actualSecs!=null,ultimoCH:esUltimoCH};
+      // El encadenado de la siguiente previsión también va AL MINUTO: el
+      // reglamento cuenta el CH como el minuto en que se pasa, así que los
+      // segundos no deben arrastrarse ni desplazar las previsiones siguientes.
+      cur=actualSecs!=null?alMinuto(actualSecs):exp;
+    }
+  }
+  return res;
+};
+
+const checkAutoDsq=(rider,cfg,timing)=>{
+  const nL=getNumLaps(rider,cfg), nC=parseInt(cfg.numTimeControls)||1;
+  let cur=rider.startSecs; // siempre desde la hora prevista original
+  for(let lap=1;lap<=nL;lap++){
+    if(!lapHasCH(rider,cfg,lap))continue; // sin CH: no se evalúa descalificación por horario
+    for(let ctrl=1;ctrl<=nC;ctrl++){
+      cur+=getCHTime(rider,cfg,lap,ctrl)*60;
+      const stored=timing?.[rider.id]?.[`${lap}-${ctrl}`];
+      const actualSecs=stored?.actual?parseT(stored.actual):null;
+      if(actualSecs!=null){
+        const diff=actualSecs-cur;
+        if(diff>30*60){
+          return{autoDsq:true,reason:`CH${ctrl} V${lap}: +${Math.floor(diff/60)}'${(diff%60).toString().padStart(2,"0")}"`};
+        }
+      }
+    }
+  }
+  return{autoDsq:false,reason:""};
+};
+
+/* Cuántos cronos ha completado un piloto en total (sumando todas las vueltas).
+   Sirve para ordenar la clasificación con más finura que contando vueltas: dos
+   pilotos en la misma vuelta pueden llevar distinto número de cronos hechos, y
+   quien lleva más va por delante. */
+const contarCronosHechos=(rider,cfg,timing,stageData,nS)=>{
+  const nL=getNumLaps(rider,cfg);
+  const cat=(cfg.categories||[]).find(c=>c.name===rider.categoria);
+  let n=0;
+  for(let l=1;l<=nL;l++){
+    for(let s=1;s<=nS;s++){
+      if(!stageScores(cfg,s,l,cat))continue;
+      const ov=timing&&timing[rider.id]&&timing[rider.id][`crono_${s}_${l}`]&&timing[rider.id][`crono_${s}_${l}`].actual;
+      const raw=ov||(stageData&&stageData[`stage_${s}`]&&stageData[`stage_${s}`][rider.dorsal]&&stageData[`stage_${s}`][rider.dorsal][l]);
+      if(raw)n++;
+    }
+  }
+  return n;
+};
+
+
 
 function buildResults(schedule, cfg, timing, stageData) {
   const nS = parseInt(cfg.numStages)||2, nC = parseInt(cfg.numTimeControls)||1;
@@ -684,25 +859,20 @@ function buildResults(schedule, cfg, timing, stageData) {
     const nL = getNumLaps(r, cfg);
     const rt = timing[r.id] || {};
     const cat = cats.find(c => c.name === r.categoria);
-    // Expected CH times
-    let cur = parseT(rt.actualStart) || r.startSecs;
+    // Horas previstas y penalizaciones: las calcula el NÚCLEO COMÚN, el mismo
+    // que usa la app central. Antes se repetía aquí el cálculo a mano y
+    // cualquier ajuste en las reglas había que replicarlo en tres sitios.
+    const et = getExpected(r, cfg, timing);
     const chExpected = {}, chPens = {};
     let tcPen = 0;
     for (let lap = 1; lap <= nL; lap++) {
-      if (!lapHasCH(r, cfg, lap)) continue; // vuelta sin CH: no entra en previstos ni penaliza
+      if (!et[lap]) continue;
       for (let ctrl = 1; ctrl <= nC; ctrl++) {
-        const exp = cur + getChTime(r, cfg, lap, ctrl)*60;
-        const stored = rt[`${lap}-${ctrl}`];
-        const actual = stored ? parseT(stored.actual) : null;
-        // Penalización AL MINUTO (regla de enduro): entrar en cualquier segundo
-        // del minuto previsto no penaliza. Igual que en la app central.
-        const alMinuto = (s) => Math.floor(s/60)*60;
-        const diff = actual != null ? (alMinuto(actual) - alMinuto(exp)) : 0;
-        chExpected[`${lap}-${ctrl}`] = exp;
-        chPens[`${lap}-${ctrl}`] = Math.abs(diff);
-        tcPen += Math.abs(diff);
-        // Encadenado AL MINUTO (igual que la app central).
-        cur = actual != null ? alMinuto(actual) : exp;
+        const cd = et[lap][ctrl];
+        if (!cd) continue;
+        chExpected[`${lap}-${ctrl}`] = cd.expected;
+        chPens[`${lap}-${ctrl}`] = cd.penalty;
+        tcPen += cd.penalty;
       }
     }
     const actualStart = parseT(rt.actualStart);
@@ -749,7 +919,9 @@ function buildResults(schedule, cfg, timing, stageData) {
     const allLapsDone = lastDoneLap >= nL;
     return { ...r, nL, nC, chPens, chActual, chExpected,
       startPen, manPen, tcPen, penTotal, stTimes, stTotal,
-      total: penTotal + stTotal, status, finished, lastDoneLap, allLapsDone };
+      total: penTotal + stTotal, status, finished, lastDoneLap, allLapsDone,
+      // Cronos completados: criterio de orden compartido con la app central
+      cronosHechos: contarCronosHechos(r, cfg, timing, stageData, nS) };
   });
 }
 
@@ -777,18 +949,31 @@ function renderAll() {
 
 function renderWelcome() {
   const cfg = (gData && gData.config) || {};
-  const name = cfg.name || 'Sin prueba activa';
+  // Sin datos de carrera: la tarjeta "Carrera actual" se atenúa y se explica
+  // que no hay ninguna en curso, en vez de dejar el nombre de la última.
+  const hayCarrera = !!(cfg.name);
+  const tarjeta = document.querySelector('.welcome-card-race') &&
+                  document.querySelector('.welcome-card-race').closest('button');
+  if (tarjeta) {
+    tarjeta.style.opacity = hayCarrera ? '1' : '0.5';
+    tarjeta.style.pointerEvents = hayCarrera ? 'auto' : 'none';
+  }
+  const name = cfg.name || 'No hay ninguna prueba en curso';
   const date = cfg.date || '';
   const riders = (gData && gData.riders) || [];
   const active = riders.filter(r => !r.dns).length;
   document.getElementById('welcomeCurrentName').textContent = name;
-  const meta = [date, active ? active + ' pilotos' : ''].filter(Boolean).join(' · ');
+  const meta = hayCarrera
+    ? [date, active ? active + ' pilotos' : ''].filter(Boolean).join(' · ')
+    : 'Consulta las pruebas ya disputadas en el histórico';
   document.getElementById('welcomeCurrentMeta').textContent = meta;
   // Indicar de dónde vienen los datos: si no hay tiempo real, puede estarse
   // mostrando una copia antigua servida por caché.
   const s = document.getElementById('welcomeCurrentSrc');
   if (s) {
-    if (gFirebaseActive && gFirebaseHasData) {
+    if (!hayCarrera) {
+      s.textContent = '';
+    } else if (gFirebaseActive && gFirebaseHasData) {
       s.textContent = '⚡ En tiempo real';
       s.style.color = 'var(--green, #22c55e)';
     } else {
@@ -1202,6 +1387,8 @@ function renderClasif() {
     // Sin tiempo registrado al final del bloque OK
     if (a.stTotal > 0 && !b.stTotal) return -1; if (!a.stTotal && b.stTotal > 0) return 1;
     // Más vueltas completadas = mejor posición (en carrera en curso)
+    // Manda quien lleva más CRONOS completados (igual que la app central)
+    if ((b.cronosHechos||0) !== (a.cronosHechos||0)) return (b.cronosHechos||0) - (a.cronosHechos||0);
     if ((b.lastDoneLap||0) !== (a.lastDoneLap||0)) return (b.lastDoneLap||0) - (a.lastDoneLap||0);
     // Mismas vueltas: menor tiempo = mejor
     return a.total - b.total;
@@ -1230,7 +1417,12 @@ function renderClasif() {
     if (r.status === 'dnf' || r.status === 'dsq') {
       lapBadgeCls = '';
       lapBadgeContent = '';
-    } else if (r.finished || last >= nL) {
+    } else if (r.finished) {
+      // Confirmado por el cronometrador: "F" de finalizado, más claro que "3/3"
+      lapBadgeCls += ' done';
+      lapBadgeContent = '<span>F</span>';
+    } else if (last >= nL) {
+      // Ha dado todas las vueltas pero aún sin confirmar
       lapBadgeCls += ' done';
       lapBadgeContent = '<span>V' + nL + '</span><span class="pr-lap-frac">/' + nL + '</span>';
     } else if (last === 0) {

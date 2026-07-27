@@ -1,0 +1,208 @@
+{
+  "rules": {
+    ".read": true,
+    ".write": false,
+    "live": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "bridges": {
+      ".read": true,
+      ".write": "auth != null",
+      "$machineId": {
+        ".validate": "newData.hasChildren(['machineId','nombre','lastSeen'])",
+        "machineId": {
+          ".validate": "newData.isString() && newData.val().length <= 64"
+        },
+        "nombre": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "hostname": {
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "lastSeen": {
+          ".validate": "newData.isNumber()"
+        },
+        "sentCount": {
+          ".validate": "newData.isNumber()"
+        },
+        "orbitsConnected": {
+          ".validate": "newData.isBoolean()"
+        },
+        "decoderConnected": {
+          ".validate": "newData.isBoolean() || newData.val() == null"
+        },
+        "lastDataAgo": {
+          ".validate": "newData.isNumber() || newData.val() == null"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "crossings": {
+      ".read": true,
+      ".write": "auth != null",
+      "$machineId": {
+        "$pushId": {
+          ".validate": "newData.hasChildren(['ts'])",
+          "machineId": {
+            ".validate": "newData.isString() && newData.val().length <= 64"
+          },
+          "transponder": {
+            ".validate": "newData.isString() || newData.val() == null"
+          },
+          "dorsal": {
+            ".validate": "newData.isString() || newData.isNumber() || newData.val() == null"
+          },
+          "lap": {
+            ".validate": "newData.isNumber() || newData.val() == null"
+          },
+          "time": {
+            ".validate": "newData.isString() || newData.val() == null"
+          },
+          "raw": {
+            ".validate": "(newData.isString() && newData.val().length <= 500) || newData.val() == null"
+          },
+          "lapPair": {
+            ".validate": "newData.isNumber() || newData.val() == null"
+          },
+          "source": {
+            ".validate": "(newData.isString() && newData.val().length <= 20) || newData.val() == null"
+          },
+          "micros": {
+            ".validate": "newData.isNumber() || newData.val() == null"
+          },
+          "ts": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "backfiles": {
+      ".read": true,
+      ".write": "auth != null",
+      "$machineId": {
+        ".validate": "newData.hasChildren(['machineId','ts','content'])",
+        "machineId": {
+          ".validate": "newData.isString() && newData.val().length <= 64"
+        },
+        "nombre": {
+          ".validate": "newData.isString() && newData.val().length <= 80"
+        },
+        "filename": {
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "ts": {
+          ".validate": "newData.isNumber()"
+        },
+        "size": {
+          ".validate": "newData.isNumber()"
+        },
+        "content": {
+          ".validate": "newData.isString() && newData.val().length <= 2200000"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "chFichajes": {
+      ".read": true,
+      ".write": "auth != null",
+      "$codigo": {
+        "$controlId": {
+          "$pushId": {
+            ".validate": "newData.hasChildren(['dorsal','horaMs','ts'])",
+            "dorsal": {
+              ".validate": "newData.isString() || newData.isNumber()"
+            },
+            "horaMs": {
+              ".validate": "newData.isNumber()"
+            },
+            "ctrl": {
+              ".validate": "newData.isNumber() || newData.val() == null"
+            },
+            "comisario": {
+              ".validate": "(newData.isString() && newData.val().length <= 80) || newData.val() == null"
+            },
+            "anulado": {
+              ".validate": "newData.isBoolean() || newData.val() == null"
+            },
+            "ts": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
+    "chPresencia": {
+      ".read": true,
+      ".write": "auth != null",
+      "$codigo": {
+        "$controlId": {
+          ".validate": "newData.hasChildren(['controlId','lastSeen'])",
+          "controlId": {
+            ".validate": "newData.isString() && newData.val().length <= 64"
+          },
+          "nombre": {
+            ".validate": "newData.isString() && newData.val().length <= 80"
+          },
+          "ctrl": {
+            ".validate": "newData.isNumber() || newData.val() == null"
+          },
+          "comisario": {
+            ".validate": "(newData.isString() && newData.val().length <= 80) || newData.val() == null"
+          },
+          "lastSeen": {
+            ".validate": "newData.isNumber()"
+          },
+          "totalFichajes": {
+            ".validate": "newData.isNumber() || newData.val() == null"
+          },
+          "pendientes": {
+            ".validate": "newData.isNumber() || newData.val() == null"
+          },
+          "ultimoFichajeMs": {
+            ".validate": "newData.isNumber() || newData.val() == null"
+          },
+          "clockState": {
+            ".validate": "(newData.isString() && newData.val().length <= 16) || newData.val() == null"
+          },
+          "clockOffsetMs": {
+            ".validate": "newData.isNumber() || newData.val() == null"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "chConfig": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "codigo": {
+        ".validate": "newData.isString() && newData.val().length <= 32"
+      }
+    },
+    "chPing": {
+      ".read": true,
+      ".write": "auth != null",
+      "$id": {
+        ".validate": "newData.hasChildren(['ts'])",
+        "ts": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
