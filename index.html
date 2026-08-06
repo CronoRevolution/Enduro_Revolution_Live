@@ -37,7 +37,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .status-dot.live{background:var(--green);box-shadow:0 0 0 3px rgba(74,222,128,0.2);animation:pulse 2s infinite}
 .status-dot.stale{background:var(--amber)}
 .status-dot.offline{background:var(--red)}
-.status-age{font-size:0.62rem;color:var(--dim);font-family:monospace;flex-shrink:0;white-space:nowrap}
+.status-age{font-size:0.62rem;color:var(--dim);font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;flex-shrink:0;white-space:nowrap}
 .status-age.stale{color:var(--amber)}
 .status-age.offline{color:var(--red)}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(74,222,128,0.2)}50%{box-shadow:0 0 0 6px rgba(74,222,128,0)}}
@@ -64,7 +64,7 @@ display:flex;flex-direction:column}
 .cat-card-accent{height:4px;width:100%;flex-shrink:0}
 .cat-card-body{padding:0.85rem 0.9rem 0.6rem;flex:1;display:flex;flex-direction:column;gap:0.35rem}
 .cat-card-name{font-size:0.9rem;font-weight:800;line-height:1.2;color:var(--text)}
-.cat-card-total{font-size:1.4rem;font-weight:900;font-family:monospace;line-height:1}
+.cat-card-total{font-size:1.4rem;font-weight:900;font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;line-height:1}
 .cat-card-leader{font-size:0.62rem;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .cat-card-bar-wrap{background:var(--border);border-radius:3px;height:4px;overflow:hidden;margin-top:0.4rem}
 .cat-card-bar{height:100%;border-radius:3px;transition:width .4s ease}
@@ -105,20 +105,20 @@ font-size:0.65rem;color:var(--dim)}
 .pilot-row.dnf{opacity:0.55}
 .pilot-row.dsq{opacity:0.4}
 .pr-pos{font-size:1.2rem;font-weight:900;min-width:36px;text-align:center;flex-shrink:0}
-.pr-dorsal{font-family:monospace;font-weight:800;font-size:1rem;color:var(--accent);
+.pr-dorsal{font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;font-weight:800;font-size:1rem;color:var(--accent);
   min-width:36px;text-align:center;flex-shrink:0}
 .pr-info{flex:1;min-width:0}
 .pr-name{font-size:0.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pr-cat{font-size:0.65rem;color:var(--dim);margin-top:1px}
 .pr-right{text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
-.pr-total{font-family:monospace;font-weight:800;font-size:0.9rem;color:var(--red)}
-.pr-diff{font-family:monospace;font-size:0.65rem;color:var(--dim)}
+.pr-total{font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;font-weight:800;font-size:0.9rem;color:var(--red)}
+.pr-diff{font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;font-size:0.65rem;color:var(--dim)}
 .pr-status{font-size:0.72rem;font-weight:700;padding:0.15rem 0.45rem;border-radius:6px}
 .pr-status.fin{background:rgba(74,222,128,0.15);color:var(--green)}
 .pr-status.dnf{background:rgba(251,191,36,0.15);color:var(--amber)}
 .pr-status.dsq{background:rgba(248,113,113,0.15);color:var(--red)}
 .pr-status.prog{background:rgba(34,211,238,0.1);color:var(--cyan)}
-.pr-lap{display:inline-flex;align-items:center;gap:3px;font-family:monospace;
+.pr-lap{display:inline-flex;align-items:center;gap:3px;font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;
   font-weight:800;font-size:0.78rem;padding:0.15rem 0.5rem;border-radius:6px;
   background:rgba(34,211,238,0.14);color:var(--cyan);
   border:1px solid rgba(34,211,238,0.35);line-height:1;flex-shrink:0;letter-spacing:0.02em}
@@ -136,7 +136,7 @@ font-size:0.65rem;color:var(--dim)}
 .detail-view{padding:0.75rem;overflow:auto;height:calc(100vh - 56px)}
 .detail-hero{background:var(--panel);border:1px solid var(--border);border-radius:12px;
   padding:1rem 1.1rem;margin-bottom:0.75rem;display:flex;gap:1rem;align-items:center}
-.detail-dorsal{font-family:monospace;font-size:2.5rem;font-weight:900;color:var(--accent);line-height:1}
+.detail-dorsal{font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;font-size:2.5rem;font-weight:900;color:var(--accent);line-height:1}
 .detail-info{flex:1}
 .detail-name{font-size:1rem;font-weight:700;line-height:1.2}
 .detail-sub{font-size:0.72rem;color:var(--dim);margin-top:3px}
@@ -150,7 +150,7 @@ font-size:0.65rem;color:var(--dim)}
 .detail-cell{background:var(--panel);border:1px solid var(--border);border-radius:8px;
   padding:0.55rem 0.7rem}
 .detail-cell-label{font-size:0.6rem;color:var(--dim);margin-bottom:2px}
-.detail-cell-val{font-family:monospace;font-weight:700;font-size:0.88rem}
+.detail-cell-val{font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;font-weight:700;font-size:0.88rem}
 .detail-cell-val.good{color:var(--blue)}
 .detail-cell-val.pen{color:var(--red)}
 .detail-cell-val.total{color:var(--red);font-size:1.1rem}
@@ -189,7 +189,7 @@ font-size:0.65rem;color:var(--dim)}
   background:var(--panel);border:1px solid var(--border);margin:0 12px 6px;
   border-radius:8px;cursor:pointer;transition:all .15s}
 .archive-race-item:hover{background:var(--panel-hover,rgba(255,255,255,0.05))}
-.archive-race-date{font-family:monospace;font-size:0.7rem;color:var(--cyan);font-weight:700;flex-shrink:0;min-width:75px}
+.archive-race-date{font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;font-size:0.7rem;color:var(--cyan);font-weight:700;flex-shrink:0;min-width:75px}
 .archive-race-info{flex:1;min-width:0}
 .archive-race-name{font-size:0.82rem;font-weight:600;color:var(--text);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
