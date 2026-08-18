@@ -596,6 +596,92 @@ body.light .ch-celda.pasado{border-color:#a7d8b4}
 .sup-codigo-box input{width:100%;padding:0.7rem;font-size:1.3rem;text-align:center;
   letter-spacing:0.3em;border-radius:8px;border:1px solid var(--border);
   background:var(--panel);color:var(--text);font-family:'Lucida Console',monospace}
+
+/* ── MAPA DE LA PRUEBA ─────────────────────────────────────────────────────
+   Recorrido de la vuelta en vertical: se lee de arriba abajo como se corre. */
+.mapa-wrap{padding:0 .85rem 2rem}
+.mapa-cab{padding:.2rem 0 .7rem}
+.mapa-tit{font-size:1.05rem;font-weight:800;letter-spacing:-.3px;
+  display:flex;align-items:center;gap:.45rem}
+.mapa-tit .punto-cat{width:10px;height:10px;border-radius:50%;background:var(--cat,var(--accent));flex-shrink:0}
+.mapa-sub{font-size:.7rem;color:var(--dim);margin-top:.2rem;line-height:1.5}
+.mapa-piloto{display:flex;align-items:center;gap:.5rem;margin-top:.6rem;
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:.5rem .65rem}
+.mapa-piloto .mpd{font-weight:800;font-size:.95rem;color:var(--cat,var(--accent));min-width:1.6em}
+.mapa-piloto .mpn{flex:1;min-width:0;font-size:.78rem;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mapa-piloto .mpx{background:none;border:1px solid var(--border);color:var(--dim);
+  border-radius:8px;font-size:.62rem;padding:.22rem .5rem;cursor:pointer;flex-shrink:0}
+
+/* Pestañas de vuelta */
+.mapa-vueltas{display:flex;gap:.35rem;overflow-x:auto;padding:.15rem 0 .7rem;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none}
+.mapa-vueltas::-webkit-scrollbar{display:none}
+.mv-tab{flex-shrink:0;border:1px solid var(--border);background:var(--panel);
+  color:var(--dim);border-radius:999px;padding:.32rem .7rem;font-size:.72rem;
+  font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
+.mv-tab.on{background:var(--cat,var(--accent));border-color:transparent;color:#fff}
+.mv-tab .mv-aqui{margin-left:.25rem;font-size:.62rem}
+
+/* La pista */
+.mapa-pista{position:relative;padding-left:1.5rem}
+.mapa-pista::before{content:'';position:absolute;left:.62rem;top:.55rem;bottom:.55rem;
+  width:2px;background:var(--border);border-radius:2px}
+/* No hay barra continua de "ya recorrido" a propósito. Los fichajes llegan con
+   huecos —un CH de solo papel no ficha, pero el crono siguiente sí— y una línea
+   verde de arriba abajo daría por pasados puntos por los que no consta que haya
+   pasado. Cada bola dice lo suyo y no dice nada de las demás. */
+
+.mp{position:relative;margin-bottom:.4rem}
+.mp-bola{position:absolute;left:-1.5rem;top:.72rem;width:11px;height:11px;border-radius:50%;
+  background:var(--bg);border:2px solid var(--border);box-sizing:border-box;z-index:1}
+.mp.pasado .mp-bola{background:var(--green);border-color:var(--green)}
+.mp.aqui .mp-bola{background:var(--accent);border-color:var(--accent);
+  box-shadow:0 0 0 4px rgba(232,35,26,.22)}
+.mp-caja{width:100%;text-align:left;font-family:inherit;cursor:pointer;
+  display:flex;align-items:center;gap:.55rem;background:var(--panel);
+  border:1px solid var(--border);border-radius:12px;padding:.55rem .7rem;color:var(--text)}
+.mp.pend .mp-caja{opacity:.62;border-style:dashed}
+.mp.pasado .mp-caja{border-color:rgba(74,222,128,.3)}
+.mp.pasado.con-pen .mp-caja{border-color:rgba(251,146,60,.45)}
+.mp.aqui .mp-caja{border-color:var(--accent);background:rgba(232,35,26,.07)}
+body.light .mp.aqui .mp-caja{background:rgba(216,31,20,.06)}
+body.light .mp.pasado .mp-caja{border-color:#a7d8b4}
+.mp-ico{font-size:.95rem;flex-shrink:0;width:1.2rem;text-align:center}
+.mp-txt{flex:1;min-width:0}
+.mp-nom{font-size:.82rem;font-weight:700;letter-spacing:-.1px}
+.mp-nota{font-size:.63rem;color:var(--dim);margin-top:1px}
+.mp-der{text-align:right;flex-shrink:0;font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+.mp-hora{font-size:.86rem;font-weight:700}
+.mp-hora.pen{color:var(--amber)}
+.mp-hora.dim{color:var(--dim);font-weight:600}
+.mp-mas{font-size:.6rem;color:var(--dim);margin-top:1px;font-family:inherit}
+.mp-chevron{font-size:.6rem;color:var(--dim);flex-shrink:0;transition:transform .2s}
+.mp.abierto .mp-chevron{transform:rotate(90deg)}
+
+/* Ficha que se abre al tocar un punto */
+.mp-det{margin:.15rem 0 .55rem;padding:.55rem .7rem;background:var(--panel2,var(--panel));
+  border:1px solid var(--border);border-left:3px solid var(--cat,var(--accent));
+  border-radius:0 10px 10px 0;font-size:.72rem;line-height:1.75}
+.mp-det .fila{display:flex;justify-content:space-between;gap:.8rem}
+.mp-det .fila span:first-child{color:var(--dim)}
+.mp-det .fila b{font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace;font-weight:700}
+.mp-det .aviso{color:var(--dim);font-size:.66rem;margin-top:.25rem;line-height:1.5}
+.mp-det .pen{color:var(--amber)}
+
+/* Salida / fin de vuelta */
+.mp-hito-fijo{position:relative;margin:.15rem 0 .55rem}
+.mp-hito-fijo .et{font-size:.7rem;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--dim);padding:.3rem 0}
+/* Verde solo cuando de verdad se ha pasado por ahí: una bandera verde en un
+   punto que el piloto aún no ha alcanzado es exactamente lo que no debe pasar. */
+.mp-hito-fijo.hecho .mp-bola{background:var(--green);border-color:var(--green)}
+.mp-hito-fijo.hecho .et{color:var(--green)}
+.mapa-nota{margin-top:.9rem;font-size:.66rem;color:var(--dim);line-height:1.6;
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:.6rem .75rem}
+.mapa-btn{display:inline-flex;align-items:center;gap:.35rem;background:var(--panel);
+  border:1px solid var(--border);color:var(--text);border-radius:999px;
+  padding:.35rem .75rem;font-size:.72rem;font-weight:700;font-family:inherit;cursor:pointer}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -681,7 +767,7 @@ body.light .ch-celda.pasado{border-color:#a7d8b4}
       border-radius:8px;padding:9px;font-size:0.76rem;font-family:inherit;cursor:pointer">
       🔍 Supervisión
     </button>
-    <div class="welcome-footer">v4.1 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v4.2 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -703,6 +789,7 @@ body.light .ch-celda.pasado{border-color:#a7d8b4}
       <div class="clasif-meta" id="clasifMeta"></div>
       <div class="clasif-ayuda">Toca un piloto para ver sus tiempos por tramo,
         las horas de paso por cada control y sus penalizaciones.</div>
+      <div id="mapaBtnSlot" style="margin-top:.5rem"></div>
     </div>
     <!-- Con 100 pilotos, lo que hace la gente es buscar a uno concreto. -->
     <div class="buscador">
@@ -721,6 +808,12 @@ body.light .ch-celda.pasado{border-color:#a7d8b4}
   <div class="detail-view" id="detailContent">
     <button class="back-btn" onclick="showClasif()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>Clasificación</button>
   </div>
+</div>
+
+<!-- VIEW: Mapa de la prueba -->
+<div class="view" id="vMapa">
+  <button class="back-btn" onclick="mapaVolver()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg><span id="mapaVolverTxt">Volver</span></button>
+  <div class="mapa-wrap" id="mapaBody"></div>
 </div>
 
 <!-- VIEW: Archive list -->
@@ -1293,6 +1386,103 @@ const contarCronosHechos=(rider,cfg,timing,stageData,nS)=>{
   return n;
 };
 
+/* ═════════════════════════════════════════════════════════════════════════/* ═══════════════════════════════════════════════════════════════════════════
+   RECORRIDO DE LA VUELTA — Enduro Revolution
+   ---------------------------------------------------------------------------
+   Dice en qué ORDEN se encuentra el piloto los controles horarios y los cronos
+   dentro de una vuelta. Sirve para dibujar el mapa de la prueba y para que el
+   espectador sepa por dónde va cada uno.
+
+   ES SOLO DESCRIPTIVO. No entra en ningún cálculo: horarios, penalizaciones,
+   vueltas y clasificación salen exactamente igual con recorrido o sin él. Si
+   este bloque desapareciera entero, la carrera se cronometraría igual. Esa es
+   la razón de que viva FUERA del núcleo de cálculo: no puede romper una
+   carrera, y por eso tampoco obliga a reinsertar el núcleo en los tres
+   programas cada vez que se toque.
+
+   Se inserta TAL CUAL en:
+       · enduro-revolution.html      (app central — lo edita)
+       · index.html                   (clasificación pública — lo dibuja)
+
+   NO EDITAR DENTRO DE UN HTML. Se edita aquí y se reinserta con
+   verificar-recorrido.js, que comprueba que las dos copias son idénticas.
+
+   Formato guardado en cfg.recorrido:
+       { puntos: [ {t:"ch",n:1}, {t:"crono",n:1}, {t:"ch",n:2}, … ] }
+   Tipos de punto:
+       {t:"ch",    n}       control horario n
+       {t:"crono", n}       tramo cronometrado n
+       {t:"hito",  texto}   marca libre: repostaje, parque cerrado, avituallamiento…
+   La salida y el fin de vuelta son implícitos: van siempre y no se editan.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Orden que se supone cuando la carrera todavía no tiene recorrido guardado
+   (carreras antiguas, o una nueva recién creada).
+
+   El reparto habitual en enduro: se ficha en el control, se hace el enlace y se
+   corre el crono antes del control siguiente. Es una SUPOSICIÓN: hay pruebas
+   donde el crono va justo antes del CH, y para eso está el editor. */
+function recorridoPorDefecto(cfg){
+  const nC=Math.max(0,parseInt(cfg&&cfg.numTimeControls)||0);
+  const nS=Math.max(0,parseInt(cfg&&cfg.numStages)||0);
+  const p=[];
+  let puestos=0;
+  for(let c=1;c<=nC;c++){
+    p.push({t:"ch",n:c});
+    if(c<nC&&puestos<nS){ puestos++; p.push({t:"crono",n:puestos}); }
+  }
+  // Los cronos que no caben entre controles (más cronos que huecos, o ningún
+  // control horario) cierran la vuelta.
+  for(let s=puestos+1;s<=nS;s++) p.push({t:"crono",n:s});
+  return p;
+}
+
+/* Recorrido efectivo: el guardado, saneado contra la configuración actual.
+
+   Si después de guardar el recorrido se cambian los cronos o los CHs de la
+   prueba, el guardado se queda desfasado. En vez de mostrar un mapa que miente
+   —controles que ya no existen, cronos que faltan— se reconcilia: fuera lo que
+   sobra, al final lo que falta. Nunca devuelve un mapa incompleto. */
+function recorridoNormalizado(cfg){
+  const nC=Math.max(0,parseInt(cfg&&cfg.numTimeControls)||0);
+  const nS=Math.max(0,parseInt(cfg&&cfg.numStages)||0);
+  const g=(cfg&&cfg.recorrido&&Array.isArray(cfg.recorrido.puntos))?cfg.recorrido.puntos:null;
+  if(!g||!g.length)return recorridoPorDefecto(cfg);
+  const vistos={};
+  const out=[];
+  for(const p of g){
+    if(!p)continue;
+    if(p.t==="hito"){
+      // Se conservan aunque estén vacíos: si al borrar el texto para reescribirlo
+      // la fila desapareciera del editor, sería imposible corregir una referencia.
+      // Los vacíos no se dibujan en el mapa, eso lo decide quien pinta.
+      out.push({t:"hito",texto:String(p.texto==null?"":p.texto).slice(0,40)});
+      continue;
+    }
+    const n=parseInt(p.n);
+    if(!(n>=1))continue;
+    if(p.t==="ch"&&n>nC)continue;
+    if(p.t==="crono"&&n>nS)continue;
+    if(p.t!=="ch"&&p.t!=="crono")continue;
+    const k=p.t+n;
+    if(vistos[k])continue;          // duplicado: un punto no se pasa dos veces
+    vistos[k]=1;
+    out.push({t:p.t,n:n});
+  }
+  for(let c=1;c<=nC;c++) if(!vistos["ch"+c])    out.push({t:"ch",n:c});
+  for(let s=1;s<=nS;s++) if(!vistos["crono"+s]) out.push({t:"crono",n:s});
+  return out;
+}
+
+/* Nombre corto de un punto, el mismo en la app central y en el móvil. */
+function nombrePunto(p){
+  if(!p)return"";
+  if(p.t==="ch")return"CH"+p.n;
+  if(p.t==="crono")return"Crono "+p.n;
+  return p.texto||"Hito";
+}
+
+
 
 
 function buildResults(schedule, cfg, timing, stageData) {
@@ -1397,7 +1587,309 @@ function renderAll() {
   if (gView === 'cats') { renderCatList(); renderStaleBanner(); }
   else if (gView === 'clasif') renderClasif();
   else if (gView === 'detail') renderDetail();
+  else if (gView === 'mapa') renderMapa();
   else if (gView === 'archive') renderArchiveList();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAPA DE LA PRUEBA
+   ---------------------------------------------------------------------------
+   El recorrido de una vuelta, en vertical y de arriba abajo como se corre:
+   salida, controles horarios, cronos y las referencias que haya puesto el
+   cronometrador. Se consulta por categoría (cada una tiene sus vueltas y sus
+   tiempos de enlace) y, si se llega desde la ficha de un piloto, marca por
+   dónde va y con qué horas reales.
+
+   El orden lo manda cfg.recorrido, que se edita en la app central. Si la
+   carrera no lo trae —las de antes de esta versión— se supone el orden
+   habitual. Nada de esto entra en el cálculo: las horas que se muestran salen
+   del mismo núcleo que la clasificación.
+   ═══════════════════════════════════════════════════════════════════════════ */
+let gMapaCat = null;      // nombre de categoría
+let gMapaPiloto = null;   // id de piloto, o null para ver la categoría entera
+let gMapaVuelta = 1;
+let gMapaAbierto = null;  // clave del punto desplegado
+
+function showMapa(catName, riderId, pushState) {
+  if (pushState === undefined) pushState = true;
+  gMapaCat = catName || gMapaCat;
+  gMapaPiloto = riderId || null;
+  gMapaAbierto = null;
+  gView = 'mapa';
+  // Al entrar desde un piloto, se abre por la vuelta en la que va: es la que
+  // interesa. Sin piloto, por la primera.
+  gMapaVuelta = 1;
+  if (gMapaPiloto) {
+    const r = mapaBuscarPiloto(gMapaPiloto);
+    if (r) gMapaVuelta = Math.min(Math.max(1, (r.lastDoneLap || 0) + 1), mapaNumVueltas(r));
+  }
+  // La vista se activa ANTES de pintar: con el contenedor oculto, las medidas
+  // valen cero y la barra de avance salía siempre vacía.
+  showView('vMapa');
+  renderMapa();
+  if (pushState) history.pushState({view:'mapa', cat:gMapaCat, pid:gMapaPiloto}, '', '');
+}
+
+function mapaVolver() { history.back(); }
+
+function mapaBuscarPiloto(id) {
+  if (!gData || !id) return null;
+  const cfg = gData.config || {};
+  const res = buildResults(computeSchedule(gData.riders || [], cfg), cfg,
+                           gData.timing || {}, gData.stageData || {});
+  return res.find(x => x.id === id) || null;
+}
+
+// Piloto de referencia para los cálculos por categoría. getNumLaps, getCHLaps y
+// getCHTime solo miran la categoría del piloto, así que con esto basta para
+// saber cuántas vueltas y cuántos minutos de enlace le tocan a la categoría.
+function mapaRefCategoria(cat) { return { categoria: cat }; }
+function mapaNumVueltas(ref) { return getNumLaps(ref, (gData && gData.config) || {}); }
+
+function mapaVerVuelta(n) { gMapaVuelta = n; gMapaAbierto = null; renderMapa(); }
+function mapaQuitarPiloto() { gMapaPiloto = null; gMapaAbierto = null; renderMapa(); }
+function mapaToggle(clave) {
+  gMapaAbierto = (gMapaAbierto === clave) ? null : clave;
+  renderMapa();
+}
+
+/* Minutos acumulados desde la salida hasta un CH, encadenando los tiempos de
+   enlace tal y como los encadena el núcleo. Solo cuentan las vueltas que llevan
+   control horario: las que no, no entran en el horario previsto. */
+function mapaMinutosHasta(ref, cfg, lap, ctrl) {
+  const nC = parseInt(cfg.numTimeControls) || 1;
+  let min = 0;
+  for (let l = 1; l <= lap; l++) {
+    if (!lapHasCH(ref, cfg, l)) continue;
+    for (let c = 1; c <= nC; c++) {
+      if (l === lap && c > ctrl) break;
+      min += getCHTime(ref, cfg, l, c);
+    }
+  }
+  return min;
+}
+
+function fmtDesdeSalida(min) {
+  const m = Math.round(min);
+  if (m < 60) return '+' + m + ' min';
+  return '+' + Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0');
+}
+
+function renderMapa() {
+  const cont = document.getElementById('mapaBody');
+  if (!cont) return;
+  const cfg = (gData && gData.config) || {};
+  if (!gData || !gMapaCat) {
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">🗺</div>'
+      + '<div class="empty-text">Sin recorrido que mostrar</div></div>';
+    return;
+  }
+  // Una sola pasada de cálculo por repintado. Antes cada punto del mapa pedía
+  // los suyos y con 91 pilotos eso era recalcular la carrera entera varias veces
+  // por pantalla, en un móvil y cada 10 segundos.
+  const resultados = buildResults(computeSchedule(gData.riders || [], cfg), cfg,
+                                  gData.timing || {}, gData.stageData || {});
+  const piloto = gMapaPiloto ? (resultados.find(x => x.id === gMapaPiloto) || null) : null;
+  // Si el piloto ya no está en los datos (carrera cambiada bajo los pies), se
+  // sigue mostrando el mapa de la categoría en vez de dejar la pantalla vacía.
+  const ref = piloto || mapaRefCategoria(gMapaCat);
+  const cat = gMapaCat;
+  const color = colorCategoria(cfg, cat);
+  const nC = parseInt(cfg.numTimeControls) || 1;
+  const nS = parseInt(cfg.numStages) || 2;
+  const nL = mapaNumVueltas(ref);
+  const chL = getCHLaps(ref, cfg);
+  const puntos = recorridoNormalizado(cfg);
+  const lap = Math.min(Math.max(1, gMapaVuelta), nL);
+  const hayCHestaVuelta = lapHasCH(ref, cfg, lap);
+
+  const botonVolver = document.getElementById('mapaVolverTxt');
+  if (botonVolver) botonVolver.textContent = piloto ? piloto.fullName.split(',')[0] : cat;
+
+  // ── Cabecera ────────────────────────────────────────────────────────────
+  let h = '<div class="mapa-cab" style="--cat:' + color + '">'
+    + '<div class="mapa-tit"><span class="punto-cat"></span>Recorrido · ' + cat + '</div>'
+    + '<div class="mapa-sub">' + nL + ' vuelta' + (nL > 1 ? 's' : '')
+    + ' · ' + nS + ' crono' + (nS > 1 ? 's' : '')
+    + ' · ' + nC + ' control' + (nC > 1 ? 'es' : '') + ' horario' + (nC > 1 ? 's' : '') + ' por vuelta'
+    + (chL < nL ? '<br>Las vueltas ' + (chL + 1) + '–' + nL + ' se cronometran sin control horario.' : '')
+    + '</div>';
+  if (piloto) {
+    h += '<div class="mapa-piloto" style="--cat:' + color + '">'
+      + '<span class="mpd">' + piloto.dorsal + '</span>'
+      + '<span class="mpn">' + piloto.fullName + '</span>'
+      + '<button class="mpx" onclick="mapaQuitarPiloto()">Ver categoría</button>'
+      + '</div>';
+  }
+  h += '</div>';
+
+  // ── Pestañas de vuelta ──────────────────────────────────────────────────
+  const vueltaActual = piloto ? Math.min((piloto.lastDoneLap || 0) + 1, nL) : 0;
+  h += '<div class="mapa-vueltas" style="--cat:' + color + '">';
+  for (let l = 1; l <= nL; l++) {
+    h += '<button class="mv-tab' + (l === lap ? ' on' : '') + '" onclick="mapaVerVuelta(' + l + ')">'
+      + 'Vuelta ' + l
+      + (piloto && l === vueltaActual && !piloto.finished ? '<span class="mv-aqui">📍</span>' : '')
+      + '</button>';
+  }
+  h += '</div>';
+
+  // ── La pista ────────────────────────────────────────────────────────────
+  // Se pinta primero el contenido y después se mide cuánto lleva recorrido:
+  // la barra verde va desde la salida hasta el último punto por el que pasó.
+  let filas = '';
+  let ultimoPasado = -1, indice = 0;
+
+  // La bola de salida solo se pinta de verde cuando de verdad ha salido: en la
+  // primera vuelta basta con que la carrera esté en marcha, en las siguientes
+  // significa que ya terminó la anterior.
+  const haSalido = !!piloto && (lap === 1 ? true : (piloto.lastDoneLap || 0) >= lap - 1);
+  filas += '<div class="mp-hito-fijo' + (haSalido ? ' hecho' : '') + '"><span class="mp-bola"></span>'
+        + '<div class="et">🏁 ' + (lap === 1 ? 'Salida' : 'Inicio de la vuelta ' + lap)
+        + (piloto && lap === 1 ? ' · ' + piloto.startStr : '') + '</div></div>';
+
+  for (const p of puntos) {
+    if (p.t === 'hito' && !String(p.texto || '').trim()) continue;   // referencia sin nombre: no se dibuja
+    if (p.t === 'ch' && !hayCHestaVuelta) continue;                   // esta vuelta no lleva CH
+    if (p.t === 'crono' && !stageScores(cfg, p.n, lap, (cfg.categories || []).find(c => c.name === cat))) continue;
+
+    const clave = p.t + (p.n || '') + '_' + lap + '_' + indice;
+    let pasado = false, conPen = false;
+    let derecha = '', detalle = '', nota = '';
+
+    if (p.t === 'ch') {
+      const k = lap + '-' + p.n;
+      const enlace = getCHTime(ref, cfg, lap, p.n);
+      const acum = mapaMinutosHasta(ref, cfg, lap, p.n);
+      if (piloto) {
+        const actual = piloto.chActual[k];
+        const exp = piloto.chExpected[k];
+        const pen = piloto.chPens[k] || 0;
+        const dif = (piloto.chDiff || {})[k] || 0;
+        pasado = !!actual; conPen = pen > 0;
+        derecha = '<div class="mp-hora ' + (pen > 0 ? 'pen' : pasado ? '' : 'dim') + '">'
+                + (actual || (exp != null ? fmtHHMM(exp) : '--:--')) + '</div>'
+                + '<div class="mp-mas">' + (pasado ? (pen > 0 ? fmtPen(pen) : 'en hora') : 'prevista') + '</div>';
+        detalle = '<div class="fila"><span>Enlace desde el punto anterior</span><b>' + enlace + ' min</b></div>'
+                + (exp != null ? '<div class="fila"><span>Hora prevista</span><b>' + fmtHHMM(exp) + '</b></div>' : '')
+                + (pasado ? '<div class="fila"><span>Hora real de paso</span><b>' + actual + '</b></div>' : '')
+                + (pen > 0
+                    ? '<div class="fila pen"><span>' + (dif < 0 ? 'Penalización por adelantarse' : 'Penalización por retraso')
+                      + '</span><b>' + fmtPen(pen) + '</b></div>'
+                    : pasado ? '<div class="fila"><span>Penalización</span><b>ninguna</b></div>' : '')
+                + (!pasado ? '<div class="aviso">Todavía no ha fichado aquí. La hora es la prevista según su salida y los enlaces.</div>' : '');
+      } else {
+        derecha = '<div class="mp-hora dim">' + fmtDesdeSalida(acum) + '</div>'
+                + '<div class="mp-mas">desde la salida</div>';
+        detalle = '<div class="fila"><span>Enlace desde el punto anterior</span><b>' + enlace + ' min</b></div>'
+                + '<div class="fila"><span>Acumulado desde la salida</span><b>' + fmtDesdeSalida(acum) + '</b></div>'
+                + '<div class="aviso">Cada piloto pasa a una hora distinta porque cada uno sale a la suya. Abre el mapa desde un piloto para ver sus horas.</div>';
+      }
+    } else if (p.t === 'crono') {
+      const t = piloto ? piloto.stTimes[p.n + '-' + lap] : null;
+      pasado = !!t;
+      if (piloto) {
+        derecha = '<div class="mp-hora ' + (t ? '' : 'dim') + '">' + (t ? fmtT(t) : '—') + '</div>'
+                + '<div class="mp-mas">' + (t ? 'su tiempo' : 'sin tiempo aún') + '</div>';
+        detalle = t
+          ? '<div class="fila"><span>Su tiempo en este crono</span><b>' + fmtT(t) + '</b></div>'
+            + mapaComparaCrono(resultados, piloto, p.n, lap, cat)
+          : '<div class="aviso">Aún no hay tiempo de este piloto en el Crono ' + p.n + ' de la vuelta ' + lap + '.</div>';
+      } else {
+        // Sin piloto, el dato con sentido es el mejor tiempo que ha hecho la
+        // categoría en ese tramo y vuelta: sitúa el crono mucho mejor que
+        // repetir "tramo cronometrado" a la derecha.
+        const mej = mapaMejorCrono(resultados, p.n, lap, cat);
+        derecha = '<div class="mp-hora ' + (mej ? '' : 'dim') + '">' + (mej ? fmtT(mej.t) : '—') + '</div>'
+                + '<div class="mp-mas">' + (mej ? 'mejor de la categoría' : 'sin tiempos aún') + '</div>';
+        detalle = (mej
+            ? '<div class="fila"><span>Mejor tiempo de la categoría</span><b>' + fmtT(mej.t) + '</b></div>'
+              + '<div class="fila"><span>Lo ha hecho</span><b>' + mej.dorsal + '</b></div>'
+              + '<div class="fila"><span>Pilotos con tiempo aquí</span><b>' + mej.n + '</b></div>'
+            : '')
+          + '<div class="aviso">Tramo cronometrado ' + p.n + '. Lo que suma al total es el tiempo de los cronos; los enlaces entre controles, no.</div>';
+      }
+    } else {
+      derecha = '';
+      detalle = '<div class="aviso">Referencia del recorrido. No se cronometra ni ficha.</div>';
+      nota = 'Referencia';
+    }
+
+    if (pasado) ultimoPasado = indice;
+    const abierto = gMapaAbierto === clave;
+    filas += '<div class="mp ' + (pasado ? 'pasado' : 'pend') + (conPen ? ' con-pen' : '')
+      + (abierto ? ' abierto' : '') + '" data-i="' + indice + '">'
+      + '<span class="mp-bola"></span>'
+      + '<button class="mp-caja" onclick="mapaToggle(\'' + clave + '\')">'
+      +   '<span class="mp-ico">' + (p.t === 'ch' ? '🕐' : p.t === 'crono' ? '⏱' : '📍') + '</span>'
+      +   '<span class="mp-txt"><span class="mp-nom">' + nombrePunto(p) + '</span>'
+      +     (nota ? '<div class="mp-nota">' + nota + '</div>' : '') + '</span>'
+      +   '<span class="mp-der">' + derecha + '</span>'
+      +   '<span class="mp-chevron">▶</span>'
+      + '</button>'
+      + (abierto ? '<div class="mp-det" style="--cat:' + color + '">' + detalle + '</div>' : '')
+      + '</div>';
+    indice++;
+  }
+
+  const vueltaHecha = !!piloto && (piloto.lastDoneLap || 0) >= lap;
+  filas += '<div class="mp-hito-fijo' + (vueltaHecha ? ' hecho' : '') + '"><span class="mp-bola"></span>'
+        + '<div class="et">🏁 Fin de la vuelta ' + lap + '</div></div>';
+
+  h += '<div class="mapa-pista" id="mapaPista">' + filas + '</div>';
+
+  if (piloto && ultimoPasado >= 0 && !piloto.finished) {
+    h += '<div class="mapa-nota">📍 El punto rojo es el último por el que ha fichado. '
+       + 'Lo que viene después son horas previstas, no reales.</div>';
+  } else if (!piloto) {
+    h += '<div class="mapa-nota">Los minutos son los mismos para toda la categoría; '
+       + 'la hora de cada piloto depende de su salida. Toca un piloto en la clasificación '
+       + 'y entra al mapa desde su ficha para ver sus horas y por dónde va.</div>';
+  }
+
+  cont.innerHTML = h;
+  // "Aquí" solo tiene sentido en la vuelta en la que va ahora mismo: en una
+  // vuelta ya terminada todos los puntos están pasados y marcar el último como
+  // su posición sería decir que está en un sitio donde ya no está.
+  const enEstaVuelta = !!piloto && !piloto.finished
+                    && piloto.status === 'ok' && lap === vueltaActual;
+  requestAnimationFrame(() => mapaPintarAvance(ultimoPasado, enEstaVuelta));
+}
+
+/* Mejor tiempo de la categoría en un crono y vuelta concretos. */
+function mapaMejorCrono(res, s, lap, cat) {
+  const k = s + '-' + lap;
+  const con = res.filter(x => x.categoria === cat && x.stTimes[k] > 0)
+                 .sort((a, b) => a.stTimes[k] - b.stTimes[k]);
+  if (!con.length) return null;
+  return { t: con[0].stTimes[k], dorsal: con[0].dorsal + ' · ' + con[0].fullName, n: con.length };
+}
+
+/* Sitúa el tiempo del piloto en ese crono dentro de su categoría: un tiempo
+   suelto no dice nada si no se sabe contra qué se compara. */
+function mapaComparaCrono(res, piloto, s, lap, cat) {
+  const k = s + '-' + lap;
+  const tiempos = res.filter(x => x.categoria === cat && x.stTimes[k] > 0)
+                     .map(x => ({ id: x.id, t: x.stTimes[k] }))
+                     .sort((a, b) => a.t - b.t);
+  if (tiempos.length < 2) return '';
+  const pos = tiempos.findIndex(x => x.id === piloto.id) + 1;
+  if (!pos) return '';
+  const mejor = tiempos[0].t;
+  return '<div class="fila"><span>Mejor de la categoría</span><b>' + fmtT(mejor) + '</b></div>'
+       + '<div class="fila"><span>Su puesto en este crono</span><b>' + pos + '° de ' + tiempos.length + '</b></div>'
+       + (pos > 1 ? '<div class="fila"><span>Diferencia con el mejor</span><b>+'
+           + fmtT(tiempos[pos - 1].t - mejor) + '</b></div>' : '');
+}
+
+/* El último punto por el que consta que ha pasado se marca en rojo, no en verde:
+   es "aquí", no "hecho". Sin esa distinción no se distingue el sitio donde está
+   ahora del resto de puntos que ya lleva. */
+function mapaPintarAvance(ultimoPasado, marcarAqui) {
+  const pista = document.getElementById('mapaPista');
+  if (!pista || ultimoPasado < 0 || !marcarAqui) return;
+  const fila = pista.querySelector('.mp[data-i="' + ultimoPasado + '"]');
+  if (fila) fila.classList.add('aqui');
 }
 
 // El nombre de la prueba es lo que identifica lo que estás mirando, así que
@@ -1981,6 +2473,17 @@ function renderClasif() {
   document.getElementById('clasifMeta').textContent =
     `${results.filter(r => r.stTotal > 0 && r.status === 'ok').length} finalizados · ${results.length} pilotos`;
 
+  // El recorrido es de una categoría: sus vueltas y sus tiempos de enlace son
+  // suyos. En Scratch se juntan categorías que pueden hacer vueltas distintas,
+  // así que ahí un único mapa mentiría y no se ofrece.
+  const slotMapa = document.getElementById('mapaBtnSlot');
+  if (slotMapa) {
+    const esCategoriaReal = (cfg.categories || []).some(c => c.name === catName);
+    slotMapa.innerHTML = esCategoriaReal
+      ? '<button class="mapa-btn" onclick="showMapa(' + JSON.stringify(catName).replace(/"/g, '&quot;') + ')">🗺 Recorrido de la prueba</button>'
+      : '';
+  }
+
   let pos = 0, leader = null, leaderLap = null;
   // Para la barra de diferencia hace falta el hueco mayor de la categoría.
   const conTiempo = results.filter(r => r.status === 'ok' && r.stTotal > 0);
@@ -2150,6 +2653,9 @@ function renderDetail() {
         <div class="detail-pos-num">${catPos <= 3 ? '<span class="medalla m'+catPos+'" style="width:34px;height:34px;font-size:1.15rem">'+catPos+'</span>' : catPos+'°'}</div>
         <div class="detail-pos-label">de ${catResults.length}</div>
       </div>` : ''}
+    </div>
+    <div style="margin:-.35rem 0 .9rem">
+      <button class="mapa-btn" onclick="showMapa(${JSON.stringify(r.categoria).replace(/"/g,'&quot;')}, ${JSON.stringify(r.id).replace(/"/g,'&quot;')})">🗺 Ver por dónde va</button>
     </div>`;
 
   // Stage times (tramos)
@@ -2299,6 +2805,8 @@ window.addEventListener('popstate', (e) => {
   } else if (dest === 'detail') {
     if (state.pid) gPilotId = state.pid;
     showDetail(gPilotId, false);
+  } else if (dest === 'mapa') {
+    showMapa(state.cat, state.pid, false);
   } else if (dest === 'clasif') {
     if (state.catName !== undefined) window._clasifCat = state.catName;
     if (state.catSel !== undefined) gCatSel = state.catSel;
