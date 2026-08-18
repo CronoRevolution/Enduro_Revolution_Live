@@ -245,6 +245,146 @@ font-size:0.65rem;color:var(--dim)}
 .welcome-footer{margin-top:auto;padding:16px 0 8px;text-align:center;
   font-size:0.6rem;color:var(--dim);opacity:0.7}
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REDISEÑO 2026 — capa visual
+   ---------------------------------------------------------------------------
+   Va DESPUÉS de los estilos originales y los sobrescribe por orden de cascada,
+   en vez de reescribir la hoja entera: la lógica de datos no se toca y el
+   cambio es reversible quitando este bloque.
+
+   Dos criterios que mandan sobre el gusto:
+   · Con 100 pilotos, la mayoría del público busca a alguien que NO está en el
+     podio. La lista es densa a propósito; el protagonismo se lo lleva la
+     cabecera, no cada fila.
+   · Se mira al sol, con guantes y con prisa: contraste alto, números grandes,
+     áreas de toque generosas.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#0a0a0c; --panel:#15151b; --panel2:#1b1b22; --border:#26262f;
+  --text:#f4f4f7; --dim:#9294a1; --accent:#ff2d20;
+  --oro:#ffc53d; --plata:#c9ced8; --bronce:#cd8c5a;
+  /* Categorías: paleta validada para fondo oscuro (contraste y daltonismo) */
+  --c1:#3987e5; --c2:#d95926; --c3:#199e70; --c4:#c98500; --c5:#d55181; --c6:#9085e9;
+}
+body.light{
+  --bg:#f7f8fa; --panel:#ffffff; --panel2:#f1f2f6; --border:#e2e4ea;
+  --text:#14151a; --dim:#6b6f7d; --accent:#d81f14;
+  --oro:#b8860b; --plata:#6b7280; --bronce:#a1622f;
+  --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4; --c6:#4a3aa7;
+}
+body{background:var(--bg);letter-spacing:-.1px}
+
+/* ── Cabecera ─────────────────────────────────────────────────────────── */
+.header{background:transparent;border-bottom:1px solid var(--border);
+  padding:.7rem .85rem;backdrop-filter:blur(12px)}
+.header-title{font-size:1.02rem;font-weight:800;letter-spacing:-.4px}
+.header-race{font-size:.66rem;color:var(--dim);letter-spacing:0}
+.status-age{font-size:.6rem}
+
+/* ── Pantalla de inicio ───────────────────────────────────────────────── */
+.welcome-title{font-size:1.9rem;font-weight:900;letter-spacing:-1.2px;
+  background:linear-gradient(96deg,var(--accent),#ff8a52);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.welcome-subtitle{font-size:.72rem;color:var(--dim);letter-spacing:.14em;
+  text-transform:uppercase;font-weight:700;margin-top:.35rem}
+.welcome-card{border-radius:18px;border:1px solid var(--border);background:var(--panel);
+  padding:1rem;box-shadow:0 8px 26px rgba(0,0,0,.28)}
+.welcome-card.current{background:
+  radial-gradient(120% 100% at 0% 0%,rgba(255,45,32,.16),transparent 62%),var(--panel);
+  border-color:rgba(255,45,32,.4)}
+.welcome-card-race{font-size:1.05rem;font-weight:800;letter-spacing:-.4px;margin-top:.2rem}
+.welcome-card-title{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;font-weight:800}
+
+/* ── Fichas de categoría ──────────────────────────────────────────────── */
+.cat-card{border-radius:18px;background:var(--panel);border:1px solid var(--border);
+  overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.22);transition:transform .12s ease}
+.cat-card-accent{height:3px}
+.cat-card-name{font-size:.92rem;font-weight:800;letter-spacing:-.3px}
+.cat-card-total{font-size:1.75rem;font-weight:900;letter-spacing:-1.4px}
+.cat-card-leader{font-size:.63rem}
+.cat-card-bar-wrap{height:3px;border-radius:2px;background:var(--panel2)}
+.cat-card-footer{font-size:.6rem;border-top:1px solid var(--border);padding:.45rem .9rem}
+
+/* ── Pestañas ─────────────────────────────────────────────────────────── */
+.tab-bar{gap:.4rem;padding:.5rem .8rem}
+.tab-btn{border-radius:999px;padding:.45rem .85rem;font-size:.76rem;font-weight:700;
+  background:var(--panel);border:1px solid var(--border);color:var(--dim)}
+.tab-btn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+
+/* ── Fila de piloto ───────────────────────────────────────────────────── */
+.clasif-cat-title{font-size:1.35rem;font-weight:900;letter-spacing:-.8px}
+.clasif-meta{font-size:.66rem;color:var(--dim)}
+.pilot-row{gap:.5rem;padding:.6rem .65rem;border-radius:14px;background:var(--panel);
+  border:1px solid transparent;margin-bottom:.4rem;align-items:center}
+.pilot-row.podium-1{background:
+  linear-gradient(100deg,rgba(255,197,61,.14),rgba(255,197,61,.03) 60%),var(--panel);
+  border-color:rgba(255,197,61,.5)}
+.pilot-row.podium-2{background:var(--panel2);border-color:rgba(201,206,216,.3)}
+.pilot-row.podium-3{background:var(--panel2);border-color:rgba(205,140,90,.3)}
+.pr-pos{min-width:26px;font-size:.95rem;font-weight:800;color:var(--dim)}
+.podium-1 .pr-pos,.podium-2 .pr-pos,.podium-3 .pr-pos{font-size:1.15rem}
+.pr-dorsal{min-width:34px;font-size:1.02rem;font-weight:900;letter-spacing:-.5px;
+  color:var(--text);border-left:3px solid var(--cat,var(--accent));padding-left:.42rem;
+  border-radius:1px}
+.pr-info{min-width:0}
+.pr-name{font-size:.84rem;font-weight:700;letter-spacing:-.2px;line-height:1.2}
+.pr-cat{font-size:.62rem;color:var(--dim);margin-top:1px}
+.pr-total{font-size:1rem;font-weight:900;letter-spacing:-.6px;line-height:1;
+  font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;
+  color:var(--text)}   /* el rojo se reserva para la marca, no para un dato */
+.podium-1 .pr-total{font-size:1.14rem;color:var(--oro)}
+.pr-diff{font-size:.64rem;color:var(--dim);margin-top:.18rem}
+/* Barra de diferencia con el líder: magnitud, un solo tono, extremo redondeado */
+.pr-gap{height:3px;border-radius:2px;background:var(--panel2);margin-top:.4rem;overflow:hidden}
+.pr-gap i{display:block;height:100%;border-radius:2px;background:var(--cat,var(--accent));
+  opacity:.9;transition:width .45s ease}
+.pr-lap{border-radius:999px;font-size:.58rem;padding:.12rem .42rem}
+
+.pilot-row.fin .pr-laps-row{display:none}   /* terminado: las vueltas ya no informan */
+.pr-laps-dots .d{height:3px;border-radius:2px}
+.pr-laps-row{margin-top:.35rem}
+/* Posición: número limpio en vez de emoji — se lee mejor a distancia y al sol */
+.medalla{display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;font-size:.78rem;font-weight:900;color:#101014}
+.m1{background:var(--oro)} .m2{background:var(--plata)} .m3{background:var(--bronce)}
+
+/* ── Ficha de piloto ──────────────────────────────────────────────────── */
+.detail-hero{border-radius:18px;background:
+  radial-gradient(130% 120% at 0% 0%,color-mix(in srgb,var(--cat,var(--accent)) 22%,transparent),transparent 60%),
+  var(--panel);
+  border:1px solid var(--border);padding:.9rem}
+.detail-dorsal{font-size:2.6rem;font-weight:900;letter-spacing:-2px;color:var(--cat,var(--accent))}
+.detail-name{font-size:1.05rem;font-weight:800;letter-spacing:-.4px}
+.detail-pos-num{font-size:2.1rem;font-weight:900;letter-spacing:-1.5px}
+.detail-cell{border-radius:12px;background:var(--panel);border:1px solid var(--border);padding:.5rem .6rem}
+.detail-cell-label{font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;color:var(--dim)}
+.detail-cell-val{font-size:.95rem;font-weight:800;letter-spacing:-.4px;color:var(--text)}
+.detail-cell-val.good{color:var(--text)}
+.detail-cell-val.suma{color:var(--text)}
+.detail-cell.suma-cronos{border-color:var(--border)}
+.detail-cell-val.green{color:var(--text)}
+.detail-cell-val.pen{color:#ff8a52}       /* la penalización sí debe cantar */
+/* El tiempo total es el dato que se viene a ver: se trata como titular */
+.detail-cell-val.total{font-size:2rem;letter-spacing:-1.4px;color:var(--oro)}
+.detail-cell.destacada{background:
+  linear-gradient(100deg,rgba(255,197,61,.12),transparent 65%),var(--panel);
+  border-color:rgba(255,197,61,.4);padding:.7rem .8rem}
+.detail-section-title{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);font-weight:800;margin:1rem 0 .45rem}
+/* ── Buscador ─────────────────────────────────────────────────────────── */
+.buscador{position:relative;padding:0 .8rem .5rem}
+.buscador input{width:100%;padding:.6rem .8rem .6rem 2rem;border-radius:12px;
+  background:var(--panel);border:1px solid var(--border);color:var(--text);
+  font-size:.85rem;font-family:inherit;outline:none}
+.buscador input:focus{border-color:var(--accent)}
+.buscador input::placeholder{color:var(--dim)}
+.buscador .lupa{position:absolute;left:1.35rem;top:50%;transform:translateY(-60%);
+  font-size:.8rem;opacity:.55;pointer-events:none}
+.buscador .limpiar{position:absolute;right:1.3rem;top:50%;transform:translateY(-60%);
+  background:none;border:0;color:var(--dim);font-size:1rem;cursor:pointer;padding:0 .3rem}
+.sin-resultados{text-align:center;color:var(--dim);font-size:.8rem;padding:2rem 1rem}
+
 /* ── Supervisión (solo lectura, uso interno) ─────────────────────────────── */
 .sup-wrap{padding:0.7rem 0.9rem 2rem}
 .sup-semaforo{border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.8rem;
@@ -355,7 +495,7 @@ font-size:0.65rem;color:var(--dim)}
       border-radius:8px;padding:9px;font-size:0.76rem;font-family:inherit;cursor:pointer">
       🔍 Supervisión
     </button>
-    <div class="welcome-footer">v3.4 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v4.0 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -375,6 +515,14 @@ font-size:0.65rem;color:var(--dim)}
       <button class="back-btn" onclick="showCats()">← Categorías</button>
       <div class="clasif-cat-title" id="clasifTitle"></div>
       <div class="clasif-meta" id="clasifMeta"></div>
+    </div>
+    <!-- Con 100 pilotos, lo que hace la gente es buscar a uno concreto. -->
+    <div class="buscador">
+      <span class="lupa">🔍</span>
+      <input id="buscarPiloto" type="search" inputmode="search" autocomplete="off"
+             placeholder="Buscar dorsal, nombre o club…" oninput="filtrarPilotos()">
+      <button class="limpiar" id="limpiarBusqueda" style="display:none"
+              onclick="limpiarBusqueda()" aria-label="Limpiar">✕</button>
     </div>
     <div class="clasif-scroll" id="clasifList"></div>
   </div>
@@ -408,6 +556,16 @@ font-size:0.65rem;color:var(--dim)}
 <div class="toast" id="toast"></div>
 
 <script>
+// Paleta de categorías (misma en fichas y en la clasificación, para que una
+// categoría tenga siempre el mismo color en toda la app).
+const COLORES_CAT = ['#3987e5','#d95926','#199e70','#c98500','#d55181','#9085e9',
+                     '#e66767','#5db1a8'];
+function colorCategoria(cfg, nombre){
+  const nombres = (cfg && cfg.categories || []).map(c => c.name);
+  const i = nombres.indexOf(nombre);
+  return COLORES_CAT[(i < 0 ? 0 : i) % COLORES_CAT.length];
+}
+
 // ── Configuración ─────────────────────────────────────────────────────────
 // Si el live.json está en el mismo repo (GitHub Pages), la URL relativa funciona.
 // Si quieres apuntar a otro sitio, cambia DATA_URL:
@@ -1467,7 +1625,10 @@ function renderCatList() {
   }
 
   list.innerHTML = (() => {
-    const ACCENTS = ['#e8231a','#0891b2','#16a34a','#d97706','#7c3aed','#db2777','#0d9488','#ea580c'];
+    // Paleta categórica validada para daltonismo y contraste sobre fondo
+    // oscuro (ver rediseño 2026). Se asigna en orden fijo y NUNCA se cicla con
+    // un tono generado: el color identifica a la categoría, no a su posición.
+    const ACCENTS = COLORES_CAT;
     const html = catsToShow.map(({name, riders}, idx) => {
       const accent = ACCENTS[idx % ACCENTS.length];
       const finished = riders.filter(r => (r.finished || r.stTotal > 0) && r.status === 'ok');
@@ -1511,6 +1672,8 @@ function renderCatList() {
 }
 
 function showClasifFor(catEnc, selEnc) {
+  const inp = document.getElementById('buscarPiloto');
+  if (inp) inp.value = '';        // cada categoría empieza sin filtro
   gCatSel = decodeURIComponent(selEnc);
   gView = 'clasif';
   window._clasifCat = decodeURIComponent(catEnc);
@@ -1561,6 +1724,11 @@ function renderClasif() {
     `${results.filter(r => r.stTotal > 0 && r.status === 'ok').length} finalizados · ${results.length} pilotos`;
 
   let pos = 0, leader = null, leaderLap = null;
+  // Para la barra de diferencia hace falta el hueco mayor de la categoría.
+  const conTiempo = results.filter(r => r.status === 'ok' && r.stTotal > 0);
+  const mejor = conTiempo.length ? Math.min(...conTiempo.map(r => r.total)) : 0;
+  const peorGap = conTiempo.length ? Math.max(...conTiempo.map(r => r.total - mejor), 1) : 1;
+  const colorCat = colorCategoria(cfg, catName);
   const html = results.map(r => {
     const ok = r.status === 'ok' && r.stTotal > 0;
     if (ok) {
@@ -1568,7 +1736,9 @@ function renderClasif() {
       if (leader === null) { leader = r.total; leaderLap = r.lastDoneLap||0; }
     }
     const podium = ok && pos <= 3 ? `podium-${pos}` : '';
-    const posEl = ok ? (pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : pos+'°') : '—';
+    const posEl = ok
+      ? (pos <= 3 ? '<span class="medalla m'+pos+'">'+pos+'</span>' : pos+'°')
+      : '—';
 
     // Badge de vuelta — siempre visible para pilotos OK (ya hayan empezado o no).
     // Verde si terminó todas las vueltas, cyan en curso, gris si aún no ha empezado.
@@ -1619,15 +1789,25 @@ function renderClasif() {
       if (lapDiff > 0) diff = '−' + lapDiff + ' vlt';
       else diff = '+' + fmtT(r.total - leader);
     }
+    // Barra de diferencia: cuánto hay hasta el líder, en proporción al mayor
+    // hueco de la categoría. El primero no lleva barra — no tiene contra quién.
+    let gapHtml = '';
+    if (ok && pos > 1 && leaderLap === (r.lastDoneLap||0)) {
+      const pct = Math.max(2, Math.min(100, ((r.total - mejor) / peorGap) * 100));
+      gapHtml = '<div class="pr-gap"><i style="width:' + pct.toFixed(1) + '%"></i></div>';
+    }
+    // data-buscar: dorsal y nombre en minúsculas, para el filtro del buscador
+    const clave = (r.dorsal + ' ' + r.fullName + ' ' + (r.club||'')).toLowerCase();
     return `
-      <div class="pilot-row ${podium} ${r.status === 'dnf' ? 'dnf' : r.status === 'dsq' ? 'dsq' : ''}"
+      <div class="pilot-row ${podium} ${r.finished ? 'fin' : ''} ${r.status === 'dnf' ? 'dnf' : r.status === 'dsq' ? 'dsq' : ''}"
+           style="--cat:${colorCat}" data-buscar="${clave.replace(/"/g,'')}"
            onclick="showDetail('${r.id}')">
         <div class="pr-pos">${posEl}</div>
         <div class="pr-dorsal">${r.dorsal}</div>
         <div class="pr-info">
           <div class="pr-name">${r.fullName}</div>
           <div class="pr-cat">${r.categoria}${r.club ? ' · ' + r.club : ''}</div>
-          ${dotsHtml}
+          ${dotsHtml}${gapHtml}
         </div>
         <div class="pr-right">
           ${lapBadge}
@@ -1637,6 +1817,45 @@ function renderClasif() {
   }).join('') || '<div class="empty"><div class="empty-icon">🏁</div><div class="empty-text">Sin datos aún</div></div>';
 
   document.getElementById('clasifList').innerHTML = html;
+  // Los datos llegan cada pocos segundos y repintan la lista: si hay una
+  // búsqueda activa, se vuelve a aplicar para no perderla al actualizarse.
+  filtrarPilotos();
+}
+
+// ── Buscador de la clasificación ──────────────────────────────────────────
+// Filtra las filas YA pintadas ocultándolas: no recalcula la clasificación ni
+// toca los datos, así que no puede alterar posiciones ni tiempos.
+function filtrarPilotos() {
+  const inp = document.getElementById('buscarPiloto');
+  if (!inp) return;
+  const q = inp.value.trim().toLowerCase();
+  const btn = document.getElementById('limpiarBusqueda');
+  if (btn) btn.style.display = q ? 'block' : 'none';
+  const filas = document.querySelectorAll('#clasifList .pilot-row');
+  let visibles = 0;
+  filas.forEach(f => {
+    const ok = !q || (f.dataset.buscar || '').includes(q);
+    f.style.display = ok ? '' : 'none';
+    if (ok) visibles++;
+  });
+  let aviso = document.getElementById('sinResultados');
+  if (!visibles && q) {
+    if (!aviso) {
+      aviso = document.createElement('div');
+      aviso.id = 'sinResultados';
+      aviso.className = 'sin-resultados';
+      document.getElementById('clasifList').appendChild(aviso);
+    }
+    aviso.textContent = 'Ningún piloto coincide con «' + inp.value.trim() + '»';
+    aviso.style.display = '';
+  } else if (aviso) {
+    aviso.style.display = 'none';
+  }
+}
+
+function limpiarBusqueda() {
+  const inp = document.getElementById('buscarPiloto');
+  if (inp) { inp.value = ''; filtrarPilotos(); inp.blur(); }
 }
 
 function showDetail(riderId, pushState = true) {
@@ -1666,18 +1885,19 @@ function renderDetail() {
   const catPos = catResults.findIndex(x => x.id === r.id) + 1;
   const nS = parseInt(cfg.numStages)||2, nC = parseInt(cfg.numTimeControls)||1;
 
+  const colorCat = colorCategoria(cfg, r.categoria);
   let html = `<button class="back-btn" onclick="showClasif()">← ${r.categoria}</button>
-    <div class="detail-hero">
+    <div class="detail-hero" style="--cat:${colorCat}">
       <div class="detail-dorsal">${r.dorsal}</div>
       <div class="detail-info">
         <div class="detail-name">${r.fullName}</div>
         <div class="detail-sub">${r.categoria}${r.club ? ' · ' + r.club : ''}</div>
-        <div class="detail-sub" style="margin-top:4px;color:var(--cyan)">
+        <div class="detail-sub" style="margin-top:4px">
           Salida: ${r.startStr}${r.startPen > 0 ? ' <span style="color:var(--red)">+' + fmtPen(r.startPen) + ' tardío</span>' : ''}
         </div>
       </div>
       ${catPos > 0 ? `<div class="detail-pos">
-        <div class="detail-pos-num">${catPos === 1 ? '🥇' : catPos === 2 ? '🥈' : catPos === 3 ? '🥉' : catPos+'°'}</div>
+        <div class="detail-pos-num">${catPos <= 3 ? '<span class="medalla m'+catPos+'" style="width:34px;height:34px;font-size:1.15rem">'+catPos+'</span>' : catPos+'°'}</div>
         <div class="detail-pos-label">de ${catResults.length}</div>
       </div>` : ''}
     </div>`;
@@ -1694,9 +1914,9 @@ function renderDetail() {
         </div>`;
       }
     }
-    html += `<div class="detail-cell" style="border-color:rgba(34,211,238,0.3)">
+    html += `<div class="detail-cell suma-cronos">
       <div class="detail-cell-label">Σ Cronos</div>
-      <div class="detail-cell-val" style="color:var(--cyan)">${fmtT(r.stTotal)}</div>
+      <div class="detail-cell-val suma">${fmtT(r.stTotal)}</div>
     </div></div>`;
   }
 
@@ -1738,7 +1958,7 @@ function renderDetail() {
   // Total
   if (r.stTotal > 0) {
     html += `<div class="section-title">Resultado</div>
-    <div class="detail-cell" style="border-color:rgba(248,113,113,0.4);margin-bottom:1rem">
+    <div class="detail-cell destacada" style="margin-bottom:1rem">
       <div class="detail-cell-label">Tiempo total</div>
       <div class="detail-cell-val total">${fmtT(r.total)}</div>
     </div>`;
