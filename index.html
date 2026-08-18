@@ -372,6 +372,100 @@ body{background:var(--bg);letter-spacing:-.1px}
   border-color:rgba(255,197,61,.4);padding:.7rem .8rem}
 .detail-section-title{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;
   color:var(--dim);font-weight:800;margin:1rem 0 .45rem}
+
+/* ── Pila de progreso ─────────────────────────────────────────────────────
+   Se llena de abajo arriba con las vueltas completadas y lleva el recuento
+   dentro. La letra final (F/R/D) va SIEMPRE acompañada de su color, nunca al
+   revés: quien no distinga los tonos sigue leyendo la letra. */
+.pila{position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:52px;height:24px;border-radius:7px;overflow:hidden;flex-shrink:0;
+  background:var(--panel2);border:1.5px solid var(--border)}
+/* Se llena de izquierda a derecha, como la batería del teléfono. El relleno va
+   por detrás del texto con opacidad contenida: si tapara el número, la pila
+   dejaría de servir para lo único que importa — saber por qué vuelta va. */
+.pila i{position:absolute;left:0;top:0;height:100%;background:var(--cat,var(--accent));
+  opacity:.38;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.pila b{position:relative;font-size:.68rem;font-weight:900;letter-spacing:-.2px;
+  color:var(--text);font-family:'Lucida Console','DejaVu Sans Mono',monospace;
+  text-shadow:0 1px 2px rgba(0,0,0,.45)}
+body.light .pila b{text-shadow:0 1px 2px rgba(255,255,255,.6)}
+.pila.cero i{opacity:0}
+.pila.cero b{color:var(--dim)}
+.pila.llena i{opacity:.45}
+.pila.fin{border-color:rgba(74,222,128,.55)}
+.pila.fin i{background:#4ade80;opacity:.28}
+.pila.fin b{color:#4ade80;font-size:.82rem}
+.pila.dnf{border-color:rgba(251,146,60,.55)}
+.pila.dnf i{background:#fb923c;opacity:.22}
+.pila.dnf b{color:#fb923c;font-size:.82rem}
+.pila.dsq{border-color:rgba(248,113,113,.6)}
+.pila.dsq i{background:#f87171;opacity:.22}
+.pila.dsq b{color:#f87171;font-size:.82rem}
+body.light .pila.fin b{color:#15803d}
+body.light .pila.dnf b{color:#c2410c}
+body.light .pila.dsq b{color:#b91c1c}
+body.light .pila i{opacity:.22}
+body.light .pila.llena i{opacity:.34}
+
+/* Intervalo con el piloto de delante: se distingue del hueco con el líder por
+   la flecha y por ir en un tono más apagado. */
+.pr-int{font-size:.6rem;color:var(--dim);opacity:.75;margin-top:.1rem;
+  font-family:'Lucida Console','DejaVu Sans Mono',monospace}
+.pr-gap{display:none}
+
+/* ── Logo de portada ──────────────────────────────────────────────────── */
+.welcome-logo{padding:14px 0 10px}
+/* Lo primero que hay que ver es la carrera del día, no el logo: se le da
+   presencia pero sin empujar la tarjeta fuera de la primera pantalla. */
+.welcome-logo-img{display:block;margin:0 auto;width:min(64vw,262px);height:auto;
+  filter:drop-shadow(0 10px 30px rgba(0,0,0,.5))}
+body.light .welcome-logo-img{filter:drop-shadow(0 8px 22px rgba(0,0,0,.16))}
+/* Con logo, el título de texto sobra; el onerror lo devuelve si la imagen falla */
+.welcome-logo-img + .welcome-title{display:none}
+.welcome-subtitle{margin-top:.75rem}
+
+/* ── Modo claro ───────────────────────────────────────────────────────────
+   En claro no valen los mismos recursos que en oscuro: allí un panel se separa
+   del fondo subiendo de luminosidad, y aquí eso lo funde con el blanco. Las
+   tarjetas se separan con borde y sombra, no con relleno. */
+body.light{
+  --bg:#eef0f4;          /* el fondo baja para que la tarjeta blanca destaque */
+  --panel:#ffffff;
+  --panel2:#e7eaf0;
+  --border:#d3d8e2;
+  --text:#101218;
+  --dim:#5d636f;
+}
+body.light .pilot-row{
+  border-color:#dfe3ea;
+  box-shadow:0 1px 2px rgba(16,18,24,.05), 0 4px 12px rgba(16,18,24,.05)}
+body.light .pilot-row.podium-1{
+  background:linear-gradient(100deg,rgba(255,197,61,.24),rgba(255,197,61,.06) 60%),#fff;
+  border-color:#e3b23c;
+  box-shadow:0 2px 5px rgba(180,120,10,.14), 0 6px 18px rgba(180,120,10,.10)}
+body.light .pilot-row.podium-2{background:#fff;border-color:#b6bcc8}
+body.light .pilot-row.podium-3{background:#fff;border-color:#d3a179}
+body.light .podium-1 .pr-total{color:#a8760a}
+body.light .cat-card{border-color:#dfe3ea;
+  box-shadow:0 1px 2px rgba(16,18,24,.05), 0 6px 16px rgba(16,18,24,.06)}
+body.light .welcome-card{border-color:#dfe3ea;
+  box-shadow:0 2px 6px rgba(16,18,24,.06), 0 10px 26px rgba(16,18,24,.07)}
+body.light .welcome-card.current{
+  background:radial-gradient(120% 100% at 0% 0%,rgba(216,31,20,.10),transparent 62%),#fff;
+  border-color:rgba(216,31,20,.38)}
+body.light .detail-cell{border-color:#dfe3ea;box-shadow:0 1px 2px rgba(16,18,24,.05)}
+body.light .detail-hero{border-color:#dfe3ea;box-shadow:0 2px 8px rgba(16,18,24,.07)}
+body.light .detail-cell.destacada{
+  background:linear-gradient(100deg,rgba(255,197,61,.22),transparent 65%),#fff;
+  border-color:#e3b23c}
+body.light .detail-cell-val.total{color:#a8760a}
+body.light .buscador input{border-color:#d3d8e2;box-shadow:0 1px 2px rgba(16,18,24,.04)}
+body.light .tab-btn{border-color:#d3d8e2;background:#fff}
+body.light .header{background:rgba(238,240,244,.9)}
+/* La medalla de plata sobre blanco necesita más cuerpo del que tiene el gris */
+body.light .m2{background:#8d95a3;color:#fff}
+body.light .m1{background:#e0a917;color:#241a00}
+body.light .m3{background:#c07f45;color:#fff}
 /* ── Buscador ─────────────────────────────────────────────────────────── */
 .buscador{position:relative;padding:0 .8rem .5rem}
 .buscador input{width:100%;padding:.6rem .8rem .6rem 2rem;border-radius:12px;
@@ -449,6 +543,11 @@ body{background:var(--bg);letter-spacing:-.1px}
 <div class="view active" id="vWelcome">
   <div class="welcome">
     <div class="welcome-logo">
+      <!-- El logo ya viaja en el repo (es el icono de la PWA). Si por lo que sea
+           no cargara, se oculta la imagen y queda el título de texto, que sigue
+           debajo: la portada nunca se ve vacía. -->
+      <img class="welcome-logo-img" src="logo.png" alt="Enduro Revolution"
+           onerror="this.style.display='none';document.querySelector('.welcome-title').style.display='block'">
       <div class="welcome-title">ENDURO REVOLUTION</div>
       <div class="welcome-subtitle">Clasificación en vivo · Histórico</div>
     </div>
@@ -1729,6 +1828,7 @@ function renderClasif() {
   const mejor = conTiempo.length ? Math.min(...conTiempo.map(r => r.total)) : 0;
   const peorGap = conTiempo.length ? Math.max(...conTiempo.map(r => r.total - mejor), 1) : 1;
   const colorCat = colorCategoria(cfg, catName);
+  let anterior = null;              // el piloto de la posición de arriba
   const html = results.map(r => {
     const ok = r.status === 'ok' && r.stTotal > 0;
     if (ok) {
@@ -1740,46 +1840,30 @@ function renderClasif() {
       ? (pos <= 3 ? '<span class="medalla m'+pos+'">'+pos+'</span>' : pos+'°')
       : '—';
 
-    // Badge de vuelta — siempre visible para pilotos OK (ya hayan empezado o no).
-    // Verde si terminó todas las vueltas, cyan en curso, gris si aún no ha empezado.
+    // ── Pila de progreso ────────────────────────────────────────────────
+    // Un solo indicador que se llena con las vueltas completadas y lleva dentro
+    // en qué vuelta va (2/5). Sustituye al badge y a la tira de puntos, que
+    // decían lo mismo dos veces. Los estados finales cambian la letra Y el
+    // color, nunca solo el color: F verde (finalizado por el cronometrador),
+    // R naranja (retirado), D roja (descalificado).
     const last = r.lastDoneLap || 0;
     const nL = r.nL || 1;
-    let lapBadgeCls = 'pr-lap';
-    let lapBadgeContent;
-    if (r.status === 'dnf' || r.status === 'dsq') {
-      lapBadgeCls = '';
-      lapBadgeContent = '';
-    } else if (r.finished) {
-      // Confirmado por el cronometrador: "F" de finalizado, más claro que "3/3"
-      lapBadgeCls += ' done';
-      lapBadgeContent = '<span>F</span>';
-    } else if (last >= nL) {
-      // Ha dado todas las vueltas pero aún sin confirmar
-      lapBadgeCls += ' done';
-      lapBadgeContent = '<span>V' + nL + '</span><span class="pr-lap-frac">/' + nL + '</span>';
-    } else if (last === 0) {
-      lapBadgeCls += ' start';
-      lapBadgeContent = '<span>Salida</span>';
-    } else {
-      lapBadgeContent = '<span>V' + last + '</span><span class="pr-lap-frac">/' + nL + '</span>';
-    }
-    const lapBadge = lapBadgeContent ? '<span class="' + lapBadgeCls + '">' + lapBadgeContent + '</span>' : '';
+    const pila = (() => {
+      if (r.status === 'dsq') return '<span class="pila dsq"><i style="width:100%"></i><b>D</b></span>';
+      if (r.status === 'dnf') return '<span class="pila dnf"><i style="width:100%"></i><b>R</b></span>';
+      const pct = Math.max(0, Math.min(100, (last / nL) * 100));
+      if (r.finished) return '<span class="pila fin"><i style="width:100%"></i><b>F</b></span>';
+      // Todas las vueltas dadas pero el cronometrador aún no lo ha confirmado:
+      // se ve llena, pero sin la F — que es lo que marca el resultado oficial.
+      const cls = last >= nL ? 'pila llena' : (last === 0 ? 'pila cero' : 'pila');
+      return '<span class="' + cls + '"><i style="width:' + pct + '%"></i><b>' + last + '/' + nL + '</b></span>';
+    })();
+    const lapBadge = pila;
+    const dotsHtml = '';
 
-    // Tira de puntos: una por vuelta. Verde si todas hechas, cyan las hechas, gris las que faltan
-    let dotsHtml = '';
-    if (r.status !== 'dnf' && r.status !== 'dsq' && nL > 0) {
-      const dots = [];
-      for (let l = 1; l <= nL; l++) {
-        const cls = (l <= last) ? (r.finished || last >= nL ? 'done' : 'ok') : '';
-        dots.push('<div class="d ' + cls + '"></div>');
-      }
-      dotsHtml = '<div class="pr-laps-row"><div class="pr-laps-dots">' + dots.join('') + '</div></div>';
-    }
-
-    const stEl = r.status === 'dnf' ? '<span class="pr-status dnf">DNF</span>'
-               : r.status === 'dsq' ? '<span class="pr-status dsq">DSQ</span>'
-               : r.finished ? '<span class="pr-status fin">✓ FIN</span>'
-               : '';
+    // Sin etiqueta de estado: la pila ya lleva la letra (F/R/D) y su color.
+    // Repetirlo al lado era decir dos veces lo mismo en una fila estrecha.
+    const stEl = '';
 
     // Diferencia: solo cuando lleva las mismas vueltas que el líder. Si no, mostrar
     // "−N vlt" indicando cuántas vueltas tiene de retraso.
@@ -1789,13 +1873,20 @@ function renderClasif() {
       if (lapDiff > 0) diff = '−' + lapDiff + ' vlt';
       else diff = '+' + fmtT(r.total - leader);
     }
-    // Barra de diferencia: cuánto hay hasta el líder, en proporción al mayor
-    // hueco de la categoría. El primero no lleva barra — no tiene contra quién.
-    let gapHtml = '';
-    if (ok && pos > 1 && leaderLap === (r.lastDoneLap||0)) {
-      const pct = Math.max(2, Math.min(100, ((r.total - mejor) / peorGap) * 100));
-      gapHtml = '<div class="pr-gap"><i style="width:' + pct.toFixed(1) + '%"></i></div>';
+    // Intervalo con quien va justo delante. Solo si ambos llevan las mismas
+    // vueltas: comparar tiempos con distinto número de vueltas no significa nada.
+    let intervalo = '';
+    if (ok && pos > 2 && anterior && anterior.lastDoneLap === (r.lastDoneLap||0)) {
+      // Desde el 3º: para el 2º, el de delante es el líder y el intervalo sería
+      // el mismo número que ya está arriba.
+      intervalo = '<div class="pr-int">↑ ' + fmtT(r.total - anterior.total) + '</div>';
     }
+    if (ok) anterior = r;
+    // Antes había aquí una barra proporcional al hueco con el líder. Se quitó:
+    // sin escala ni leyenda no se entendía qué medía. En su lugar va un dato
+    // que se lee solo — cuánto tiempo tiene con el piloto de delante, que es
+    // justo lo que se mira para saber si lo puede cazar.
+    const gapHtml = '';
     // data-buscar: dorsal y nombre en minúsculas, para el filtro del buscador
     const clave = (r.dorsal + ' ' + r.fullName + ' ' + (r.club||'')).toLowerCase();
     return `
@@ -1811,7 +1902,7 @@ function renderClasif() {
         </div>
         <div class="pr-right">
           ${lapBadge}
-          ${ok ? `<div class="pr-total">${fmtT(r.total)}</div><div class="pr-diff">${diff}</div>` : stEl}
+          ${ok ? `<div class="pr-total">${fmtT(r.total)}</div><div class="pr-diff">${diff}</div>${intervalo}` : stEl}
         </div>
       </div>`;
   }).join('') || '<div class="empty"><div class="empty-icon">🏁</div><div class="empty-text">Sin datos aún</div></div>';
