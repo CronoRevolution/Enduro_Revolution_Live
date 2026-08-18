@@ -244,6 +244,43 @@ font-size:0.65rem;color:var(--dim)}
 .welcome-recargar:active{background:rgba(255,255,255,0.05);}
 .welcome-footer{margin-top:auto;padding:16px 0 8px;text-align:center;
   font-size:0.6rem;color:var(--dim);opacity:0.7}
+
+/* ── Supervisión (solo lectura, uso interno) ─────────────────────────────── */
+.sup-wrap{padding:0.7rem 0.9rem 2rem}
+.sup-semaforo{border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.8rem;
+  display:flex;align-items:center;gap:0.7rem;border:1px solid}
+.sup-semaforo .ico{font-size:1.5rem;line-height:1}
+.sup-semaforo .txt{font-size:1rem;font-weight:800;line-height:1.25}
+.sup-semaforo .sub{font-size:0.72rem;font-weight:500;opacity:0.85;margin-top:2px}
+.sup-ok{background:rgba(74,222,128,0.10);border-color:rgba(74,222,128,0.5);color:var(--green)}
+.sup-warn{background:rgba(251,191,36,0.10);border-color:rgba(251,191,36,0.5);color:var(--amber)}
+.sup-bad{background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.55);color:var(--red)}
+.sup-sec{font-size:0.66rem;font-weight:800;color:var(--dim);text-transform:uppercase;
+  letter-spacing:0.06em;margin:0.9rem 0 0.4rem}
+.sup-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:0.6rem 0.75rem;margin-bottom:0.45rem}
+.sup-card.bad{border-color:rgba(248,113,113,0.55)}
+.sup-card.warn{border-color:rgba(251,191,36,0.5)}
+.sup-card-top{display:flex;align-items:baseline;justify-content:space-between;gap:0.5rem}
+.sup-card-tit{font-size:0.85rem;font-weight:800}
+.sup-card-est{font-size:0.7rem;font-weight:700;white-space:nowrap}
+.sup-card-det{font-size:0.7rem;color:var(--dim);margin-top:3px;line-height:1.45;
+  font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace}
+.sup-chip{display:inline-block;padding:2px 7px;border-radius:20px;font-size:0.66rem;
+  font-weight:700;margin:2px 4px 2px 0;border:1px solid}
+.sup-chip.on{color:var(--green);border-color:rgba(74,222,128,0.5);background:rgba(74,222,128,0.08)}
+.sup-chip.off{color:var(--dim);border-color:var(--border)}
+.sup-fuera{font-size:0.74rem;padding:0.3rem 0;border-bottom:1px solid var(--border);
+  display:flex;gap:0.5rem;align-items:baseline}
+.sup-fuera:last-child{border-bottom:0}
+.sup-fuera b{font-family:'Lucida Console','DejaVu Sans Mono','Liberation Mono',Menlo,monospace;
+  color:var(--red);min-width:2.6em}
+.sup-pie{margin-top:1.1rem;text-align:center;font-size:0.66rem;color:var(--dim);line-height:1.6}
+.sup-solo-lectura{margin-top:0.5rem;text-align:center;font-size:0.64rem;color:var(--dim)}
+.sup-codigo-box{padding:1.2rem}
+.sup-codigo-box input{width:100%;padding:0.7rem;font-size:1.3rem;text-align:center;
+  letter-spacing:0.3em;border-radius:8px;border:1px solid var(--border);
+  background:var(--panel);color:var(--text);font-family:'Lucida Console',monospace}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -313,6 +350,11 @@ font-size:0.65rem;color:var(--dim)}
       </div>
       <div class="welcome-card-race" id="welcomeArchiveMeta">Consulta clasificaciones de pruebas anteriores</div>
     </button>
+    <button id="supBtn" onclick="showSuper()" style="display:none;margin-top:10px;width:100%;
+      background:transparent;border:1px solid var(--border);color:var(--dim);
+      border-radius:8px;padding:9px;font-size:0.76rem;font-family:inherit;cursor:pointer">
+      🔍 Supervisión
+    </button>
     <div class="welcome-footer">v3.4 · Enduro Revolution © 2025</div>
   </div>
 </div>
@@ -352,6 +394,17 @@ font-size:0.65rem;color:var(--dim)}
   </div>
 </div>
 
+
+<!-- VIEW: Supervisión (interno, solo lectura) -->
+<div class="view" id="vSuper">
+  <div class="sup-wrap">
+    <button class="back-btn" onclick="showWelcome()">← Inicio</button>
+    <div id="supBody">
+      <div class="loading"><div class="spinner"></div> Conectando…</div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -366,8 +419,13 @@ font-size:0.65rem;color:var(--dim)}
 //   1. cdn.statically.io  — caché ~1 min  (la mejor para inmediatez)
 //   2. raw.githubusercontent.com — caché ~5 min
 //   3. github.io / URL del hash original — último recurso
-const HASH_URL = (window.location.hash && window.location.hash.length > 1)
+// El hash de esta app ES la URL de los datos (ver arriba). El código de
+// supervisión viaja en ?sup=…, no en el hash, precisamente para no pisarlo; y si
+// alguien abre un enlace antiguo con #sup=…, aquí se descarta para que no acabe
+// como URL de datos y rompa la carga.
+const _hashCrudo = (window.location.hash && window.location.hash.length > 1)
   ? window.location.hash.slice(1) : null;
+const HASH_URL = (_hashCrudo && /^sup=/.test(_hashCrudo)) ? null : _hashCrudo;
 
 // Intentar extraer USER/REPO del hash si viene como raw o github.io
 function deriveUserRepo(url) {
@@ -1131,6 +1189,8 @@ function enterArchive() {
 
 function showWelcome(pushState = true) {
   gView = 'welcome';
+  supDesconectar();   // fuera de la pantalla no se escucha: cuesta lecturas
+  try { renderAll(); } catch (e) {}   // devuelve la cabecera a su estado normal
   // Si estábamos en un archivo, volvemos a en vivo silenciosamente al entrar en welcome
   if (gViewingArchive) {
     gViewingArchive = null;
@@ -1737,7 +1797,9 @@ function navHome() {
 window.addEventListener('popstate', (e) => {
   const state = e.state || {};
   const dest = state.view || 'welcome';
-  if (dest === 'welcome') {
+  if (dest === 'super') {
+    showSuper(false);
+  } else if (dest === 'welcome') {
     showWelcome(false);
   } else if (dest === 'archive') {
     showArchive(false);
@@ -1752,6 +1814,233 @@ window.addEventListener('popstate', (e) => {
     showCats(false);
   }
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUPERVISIÓN — panel interno, SOLO LECTURA
+// ---------------------------------------------------------------------------
+// Para ver desde el móvil cómo va el sistema mientras cronometra otra persona.
+// No hay ni un botón que modifique la carrera: si dos personas pueden tocar lo
+// mismo a la vez en plena prueba, se acaba pisando el trabajo. Se mira y se
+// dice por teléfono; quien está en el PC ejecuta.
+//
+// El acceso es un código en la RUTA de Firebase (supervision/{codigo}), no una
+// comparación aquí. Es disuasorio, no seguridad: cuatro cifras se aciertan.
+// ═══════════════════════════════════════════════════════════════════════════
+var gSupCodigo = null, gSupRef = null, gSupData = null, gSupTimer = null;
+
+function supLeerCodigo() {
+  // Viene en ?sup=1234. En el hash NO: ahí va la URL de los datos.
+  // Se acepta también #sup=… por si queda algún enlace de los primeros.
+  try {
+    var m = String(location.search || '').match(/[?&]sup=(\w{1,12})/);
+    if (!m) m = String(location.hash || '').match(/^#?sup=(\w{1,12})$/);
+    if (m) {
+      localStorage.setItem('er_sup_codigo', m[1]);
+      // Se quita de la barra para que no quede a la vista, conservando el resto
+      // de la URL (el hash con la ruta de los datos tiene que sobrevivir).
+      try {
+        var q = String(location.search || '').replace(/([?&])sup=\w{1,12}&?/, '$1').replace(/[?&]$/, '');
+        var h = /^#?sup=/.test(location.hash || '') ? '' : (location.hash || '');
+        history.replaceState(null, '', location.pathname + q + h);
+      } catch (e) {}
+      return m[1];
+    }
+  } catch (e) {}
+  try { return localStorage.getItem('er_sup_codigo') || null; } catch (e) { return null; }
+}
+
+function supInit() {
+  gSupCodigo = supLeerCodigo();
+  var btn = document.getElementById('supBtn');
+  if (btn) btn.style.display = gSupCodigo ? 'block' : 'none';
+}
+
+function showSuper(pushState) {
+  if (pushState === undefined) pushState = true;
+  gView = 'super';
+  // La cabecera es la de la clasificación pública; aquí confunde.
+  var t = document.getElementById('hTitle'), r = document.getElementById('hRace');
+  if (t) t.textContent = 'Supervisión';
+  if (r) r.textContent = 'Estado del sistema · solo lectura';
+  showView('vSuper');
+  supRender();
+  supConectar();
+  if (pushState) history.pushState({ view: 'super' }, '', '');
+}
+
+// Escucha del nodo. Se corta al salir de la pantalla y cuando el móvil se va a
+// segundo plano: son lecturas facturables y el plan es el gratuito.
+function supConectar() {
+  if (!gSupCodigo || typeof firebase === 'undefined' || !firebase.database) return;
+  if (gSupRef) return;
+  try {
+    gSupRef = firebase.database().ref('supervision/' + encodeURIComponent(gSupCodigo));
+    gSupRef.on('value', function (snap) {
+      gSupData = snap.val();
+      if (gView === 'super') supRender();
+    }, function (err) {
+      gSupData = { _error: (err && err.message) || 'sin acceso' };
+      if (gView === 'super') supRender();
+    });
+  } catch (e) { gSupData = { _error: e.message }; supRender(); }
+  if (gSupTimer) clearInterval(gSupTimer);
+  gSupTimer = setInterval(function () { if (gView === 'super') supRender(); }, 5000);
+}
+
+function supDesconectar() {
+  if (gSupRef) { try { gSupRef.off('value'); } catch (e) {} gSupRef = null; }
+  if (gSupTimer) { clearInterval(gSupTimer); gSupTimer = null; }
+}
+
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden) supDesconectar();
+  else if (gView === 'super') supConectar();
+});
+
+function supHace(seg) {
+  if (seg == null) return '—';
+  if (seg < 60) return seg + ' s';
+  var m = Math.floor(seg / 60);
+  if (m < 60) return m + ' min';
+  return Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+}
+function supEsc(t) {
+  return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+
+var SUP_SILENCIO_ALERTA = 300;   // 5 min sin tiempos = rojo (lo pide el spec)
+
+function supRender() {
+  var box = document.getElementById('supBody');
+  if (!box) return;
+  var d = gSupData;
+
+  if (!gSupCodigo) {
+    box.innerHTML = '<div class="sup-codigo-box"><div style="font-size:0.8rem;color:var(--dim);' +
+      'line-height:1.6;text-align:center">Este panel necesita un código.<br>' +
+      'Ábrelo con el enlace que genera la app del cronometrador.</div></div>';
+    return;
+  }
+  if (d && d._error) {
+    box.innerHTML = '<div class="sup-semaforo sup-bad"><span class="ico">⛔</span><div>' +
+      '<div class="txt">No se puede leer el panel</div>' +
+      '<div class="sub">' + supEsc(d._error) + '</div></div></div>';
+    return;
+  }
+  if (!d) {
+    box.innerHTML = '<div class="sup-semaforo sup-warn"><span class="ico">…</span><div>' +
+      '<div class="txt">Sin datos todavía</div><div class="sub">El código puede ser de otra carrera, ' +
+      'o el PC aún no ha publicado nada. Comprueba que la app está abierta.</div></div></div>';
+    return;
+  }
+
+  var cronos = d.cronos || [], chs = d.ch || [], pub = d.publicacion || {};
+  var edad = Math.max(0, Math.round((Date.now() - (d.ts || 0)) / 1000));
+
+  // ── Avisos, en orden de gravedad ────────────────────────────────────────
+  var rojos = [], ambar = [];
+  cronos.forEach(function (c) {
+    var et = 'Crono ' + c.n;
+    if (!c.pc) { ambar.push(et + ' sin PC asignado'); return; }
+    if (!c.vivo) rojos.push(et + ' (' + c.pc + ') no responde');
+    else if (c.silencioSeg != null && c.silencioSeg > SUP_SILENCIO_ALERTA)
+      rojos.push(et + ' lleva ' + supHace(c.silencioSeg) + ' sin tiempos');
+    if (c.noEnviados) rojos.push(et + ': ' + c.noEnviados + ' tiempo(s) NO enviados');
+    else if (c.sinRed) ambar.push(et + ' sin conexión (' + (c.pendientes || 0) + ' en cola)');
+  });
+  if (!pub.firebase) rojos.push('El directo no está llegando al móvil');
+  if (d.totalFuera) ambar.push(d.totalFuera + ' piloto(s) fuera de control horario');
+  if (d.porRevisar) ambar.push(d.porRevisar + ' tiempo(s) por revisar');
+  // El dato del propio panel también puede estar viejo, y hay que decirlo.
+  if (edad > 90) rojos.push('Este panel no se actualiza desde hace ' + supHace(edad));
+
+  var clase = rojos.length ? 'sup-bad' : (ambar.length ? 'sup-warn' : 'sup-ok');
+  var ico = rojos.length ? '⛔' : (ambar.length ? '⚠' : '✓');
+  var titulo = rojos.length ? (rojos.length === 1 ? '1 problema' : rojos.length + ' problemas')
+             : (ambar.length ? (ambar.length === 1 ? '1 aviso' : ambar.length + ' avisos')
+             : 'Todo correcto');
+  var detalle = rojos.concat(ambar).slice(0, 4).join(' · ') ||
+                (d.estado === 'started' ? 'Carrera en marcha' :
+                 d.estado === 'finished' ? 'Carrera finalizada' : 'Carrera sin iniciar');
+
+  var h = '';
+  h += '<div class="sup-semaforo ' + clase + '"><span class="ico">' + ico + '</span><div>' +
+       '<div class="txt">' + titulo + '</div><div class="sub">' + supEsc(detalle) + '</div></div></div>';
+
+  h += '<div style="font-size:0.8rem;font-weight:800">' + supEsc(d.carrera || '(sin nombre)') + '</div>' +
+       '<div style="font-size:0.68rem;color:var(--dim);margin-top:2px">' +
+       supEsc(d.fecha || '') + (d.fecha ? ' · ' : '') +
+       (d.estado === 'started' ? 'en marcha' : d.estado === 'finished' ? 'finalizada' : 'sin iniciar') +
+       '</div>';
+
+  // ── Cronos ──────────────────────────────────────────────────────────────
+  h += '<div class="sup-sec">Cronos</div>';
+  if (!cronos.length) h += '<div class="sup-card"><div class="sup-card-det">Sin cronos configurados</div></div>';
+  cronos.forEach(function (c) {
+    var mal = c.pc && (!c.vivo || (c.silencioSeg != null && c.silencioSeg > SUP_SILENCIO_ALERTA) || c.noEnviados);
+    var ojo = !mal && (c.sinRed || !c.pc);
+    var est = !c.pc ? '<span style="color:var(--dim)">sin PC</span>'
+            : !c.vivo ? '<span style="color:var(--red)">no responde</span>'
+            : (c.silencioSeg != null && c.silencioSeg > SUP_SILENCIO_ALERTA)
+              ? '<span style="color:var(--red)">callado</span>'
+              : '<span style="color:var(--green)">ok</span>';
+    h += '<div class="sup-card ' + (mal ? 'bad' : ojo ? 'warn' : '') + '">' +
+         '<div class="sup-card-top"><span class="sup-card-tit">Crono ' + c.n +
+         (c.pc ? ' · ' + supEsc(c.pc) : '') + '</span>' +
+         '<span class="sup-card-est">' + est + '</span></div>' +
+         '<div class="sup-card-det">' + (c.tiempos || 0) + ' tiempos' +
+         (c.silencioSeg != null ? ' · último hace ' + supHace(c.silencioSeg) : '') +
+         (c.pendientes ? ' · ' + c.pendientes + ' en cola' : '') +
+         (c.noEnviados ? ' · ' + c.noEnviados + ' NO ENVIADOS' : '') +
+         (c.ultimoBack ? '<br>BACK hace ' + supHace(Math.round((Date.now() - c.ultimoBack) / 1000)) : '') +
+         '</div></div>';
+  });
+
+  // ── Controles horarios: los de papel en gris, que es lo normal ──────────
+  h += '<div class="sup-sec">Controles horarios</div><div class="sup-card">';
+  if (!chs.length) h += '<div class="sup-card-det">Sin controles configurados</div>';
+  chs.forEach(function (c) {
+    h += '<span class="sup-chip ' + (c.movil ? 'on' : 'off') + '">CH' + c.n +
+         (c.movil ? ' móvil' : ' papel') + '</span>';
+  });
+  h += '</div>';
+
+  // ── Pendientes ──────────────────────────────────────────────────────────
+  h += '<div class="sup-sec">Pendientes</div><div class="sup-card">' +
+       '<div class="sup-card-top"><span class="sup-card-tit">Por revisar</span>' +
+       '<span class="sup-card-est" style="color:' + (d.porRevisar ? 'var(--amber)' : 'var(--green)') + '">' +
+       (d.porRevisar || 0) + '</span></div></div>';
+  if (d.totalFuera) {
+    h += '<div class="sup-card warn"><div class="sup-card-top">' +
+         '<span class="sup-card-tit">Fuera de control horario</span>' +
+         '<span class="sup-card-est" style="color:var(--red)">' + d.totalFuera + '</span></div>' +
+         '<div style="margin-top:5px">';
+    (d.fueraDeControl || []).forEach(function (f) {
+      h += '<div class="sup-fuera"><b>' + supEsc(f.dorsal) + '</b>' +
+           '<span style="flex:1">' + supEsc(f.nombre) + '</span>' +
+           '<span style="color:var(--dim)">' + supEsc(f.motivo) + '</span></div>';
+    });
+    if (d.totalFuera > (d.fueraDeControl || []).length)
+      h += '<div class="sup-card-det">y ' + (d.totalFuera - d.fueraDeControl.length) + ' más</div>';
+    h += '</div></div>';
+  }
+
+  // ── Publicación ─────────────────────────────────────────────────────────
+  var gh = pub.github ? Math.round((Date.now() - pub.github) / 1000) : null;
+  h += '<div class="sup-sec">Publicación</div><div class="sup-card' + (pub.firebase ? '' : ' bad') + '">' +
+       '<div class="sup-card-top"><span class="sup-card-tit">Directo (móvil)</span>' +
+       '<span class="sup-card-est" style="color:' + (pub.firebase ? 'var(--green)' : 'var(--red)') + '">' +
+       (pub.firebase ? 'llegando' : 'NO llega') + '</span></div>' +
+       '<div class="sup-card-det">GitHub: ' +
+       (gh != null ? 'hace ' + supHace(gh) : 'sin publicar todavía') + '</div></div>';
+
+  h += '<div class="sup-pie">Panel actualizado hace ' + supHace(edad) + '</div>';
+  h += '<div class="sup-solo-lectura">Solo lectura · desde aquí no se modifica nada</div>';
+  box.innerHTML = h;
+}
 
 // ── Init ───────────────────────────────────────────────────────────────────
 // Función para (re)programar el timer según visibilidad
@@ -1884,6 +2173,9 @@ function showUpdateBanner(serverBuild) {
   };
   document.body.appendChild(bar);
 }
+// Supervisión: mira si este móvil tiene código guardado (o viene en la URL)
+try { supInit(); } catch (e) { console.warn('supInit', e); }
+
 // Comprobar al cargar y cada 2 minutos
 setTimeout(checkForNewerBuild, 5000);
 setInterval(checkForNewerBuild, 2 * 60 * 1000);
