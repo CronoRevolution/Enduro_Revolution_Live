@@ -466,6 +466,44 @@ body.light .header{background:rgba(238,240,244,.9)}
 body.light .m2{background:#8d95a3;color:#fff}
 body.light .m1{background:#e0a917;color:#241a00}
 body.light .m3{background:#c07f45;color:#fff}
+
+/* ── Motivo de la penalización de un control horario ──────────────────────
+   Adelanto y retraso penalizan igual según el reglamento, pero son cosas
+   distintas y el piloto pregunta cuál fue. Van con flecha Y palabra, no solo
+   con color. */
+.ch-motivo{font-size:.6rem;font-weight:700;margin-top:3px;line-height:1.3}
+.ch-motivo.retraso{color:#fb923c}
+.ch-motivo.adelanto{color:#60a5fa}
+body.light .ch-motivo.retraso{color:#c2410c}
+body.light .ch-motivo.adelanto{color:#1d4ed8}
+.ch-previsto{font-size:.57rem;color:var(--dim);margin-top:2px;
+  font-family:'Lucida Console','DejaVu Sans Mono',monospace}
+.detail-cell.con-pen{border-color:rgba(251,146,60,.45)}
+body.light .detail-cell.con-pen{border-color:#e8a06a}
+
+/* ── Navegación ───────────────────────────────────────────────────────────
+   Iconos en SVG en lugar de caracteres: '⌂' no existe en todas las fuentes de
+   móvil y '‹' se dibujaba con grosores distintos en cada teléfono. */
+.nav-btn{width:38px;height:38px;padding:0;display:inline-flex;align-items:center;
+  justify-content:center;border-radius:12px;background:var(--panel);
+  border:1px solid var(--border);color:var(--text);
+  transition:transform .12s ease,background .15s ease}
+.nav-btn:active{transform:scale(.92);background:var(--panel2)}
+.nav-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round}
+#btnBack{background:var(--accent);border-color:var(--accent);color:#fff}
+#btnBack:active{background:var(--accent);filter:brightness(.88)}
+.back-btn{color:var(--text);gap:.4rem;font-size:.82rem;padding:.45rem .7rem .45rem .5rem;
+  background:var(--panel);border:1px solid var(--border);border-radius:999px;
+  align-self:flex-start;margin-bottom:.2rem}
+.back-btn:active{background:var(--panel2)}
+.back-btn .ico{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.6;
+  stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
+
+.clasif-ayuda{font-size:.66rem;color:var(--dim);line-height:1.4;margin-top:.35rem;
+  padding-left:.9rem;position:relative}
+.clasif-ayuda::before{content:'';position:absolute;left:0;top:.35em;width:3px;height:calc(100% - .5em);
+  border-radius:2px;background:var(--accent);opacity:.65}
 /* ── Buscador ─────────────────────────────────────────────────────────── */
 .buscador{position:relative;padding:0 .8rem .5rem}
 .buscador input{width:100%;padding:.6rem .8rem .6rem 2rem;border-radius:12px;
@@ -523,8 +561,12 @@ body.light .m3{background:#c07f45;color:#fff}
 
 <div class="header">
   <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0">
-    <button class="nav-btn" id="btnBack" onclick="navBack()" style="display:none" aria-label="Atrás">‹</button>
-    <button class="nav-btn" id="btnHome" onclick="navHome()" style="display:none" aria-label="Inicio" title="Inicio">⌂</button>
+    <button class="nav-btn" id="btnBack" onclick="navBack()" style="display:none" aria-label="Atrás">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+    </button>
+    <button class="nav-btn" id="btnHome" onclick="navHome()" style="display:none" aria-label="Inicio" title="Inicio">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7"/><path d="M6.5 10v9.5h11V10"/></svg>
+    </button>
   </div>
   <div style="flex:1;min-width:0;margin:0 0.4rem">
     <div class="header-title" id="hTitle">Clasificación en Vivo</div>
@@ -611,9 +653,11 @@ body.light .m3{background:#c07f45;color:#fff}
 <div class="view" id="vClasif">
   <div class="clasif-view">
     <div class="clasif-header">
-      <button class="back-btn" onclick="showCats()">← Categorías</button>
+      <button class="back-btn" onclick="showCats()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>Categorías</button>
       <div class="clasif-cat-title" id="clasifTitle"></div>
       <div class="clasif-meta" id="clasifMeta"></div>
+      <div class="clasif-ayuda">Toca un piloto para ver sus tiempos por tramo,
+        las horas de paso por cada control y sus penalizaciones.</div>
     </div>
     <!-- Con 100 pilotos, lo que hace la gente es buscar a uno concreto. -->
     <div class="buscador">
@@ -630,7 +674,7 @@ body.light .m3{background:#c07f45;color:#fff}
 <!-- VIEW: Pilot detail -->
 <div class="view" id="vDetail">
   <div class="detail-view" id="detailContent">
-    <button class="back-btn" onclick="showClasif()">← Clasificación</button>
+    <button class="back-btn" onclick="showClasif()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>Clasificación</button>
   </div>
 </div>
 
@@ -645,7 +689,7 @@ body.light .m3{background:#c07f45;color:#fff}
 <!-- VIEW: Supervisión (interno, solo lectura) -->
 <div class="view" id="vSuper">
   <div class="sup-wrap">
-    <button class="back-btn" onclick="showWelcome()">← Inicio</button>
+    <button class="back-btn" onclick="showWelcome()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>Inicio</button>
     <div id="supBody">
       <div class="loading"><div class="spinner"></div> Conectando…</div>
     </div>
@@ -1215,7 +1259,8 @@ function buildResults(schedule, cfg, timing, stageData) {
     // cualquier ajuste en las reglas había que replicarlo en tres sitios.
     const et = getExpected(r, cfg, timing);
     const chExpected = {}, chPens = {};
-    let tcPen = 0;
+    let tcPen = 0, penAdelanto = 0, penRetraso = 0;
+    const chDiff = {};
     for (let lap = 1; lap <= nL; lap++) {
       if (!et[lap]) continue;
       for (let ctrl = 1; ctrl <= nC; ctrl++) {
@@ -1223,6 +1268,11 @@ function buildResults(schedule, cfg, timing, stageData) {
         if (!cd) continue;
         chExpected[`${lap}-${ctrl}`] = cd.expected;
         chPens[`${lap}-${ctrl}`] = cd.penalty;
+        // El signo de la diferencia dice SI FUE ADELANTO O RETRASO, y se estaba
+        // tirando: la app solo guardaba la penalización, que es siempre positiva.
+        // Negativo = pasó antes de su hora; positivo = pasó tarde.
+        chDiff[`${lap}-${ctrl}`] = cd.diff;
+        if (cd.diff < 0) penAdelanto += cd.penalty; else penRetraso += cd.penalty;
         tcPen += cd.penalty;
       }
     }
@@ -1269,7 +1319,7 @@ function buildResults(schedule, cfg, timing, stageData) {
     }
     const allLapsDone = lastDoneLap >= nL;
     return { ...r, nL, nC, chPens, chActual, chExpected,
-      startPen, manPen, tcPen, penTotal, stTimes, stTotal,
+      startPen, manPen, tcPen, penTotal, stTimes, stTotal, chDiff, penAdelanto, penRetraso,
       total: penTotal + stTotal, status, finished, lastDoneLap, allLapsDone,
       // Cronos completados: criterio de orden compartido con la app central
       cronosHechos: contarCronosHechos(r, cfg, timing, stageData, nS) };
@@ -1558,7 +1608,7 @@ function renderArchiveList() {
     byYear[y].push(r);
   });
   const years = Object.keys(byYear).sort().reverse();
-  let html = '<button class="back-btn" onclick="showCats()" style="margin:12px">← Volver</button>';
+  let html = '<button class="back-btn" onclick="showCats()" style="margin:12px"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>Volver</button>';
   years.forEach(y => {
     html += '<div class="archive-year-header">' + escapeHtml(y) + '</div>';
     byYear[y].forEach(r => {
@@ -1967,7 +2017,7 @@ function renderDetail() {
   const results = buildResults(schedule, cfg, timing, stageData);
 
   const r = results.find(x => x.id === gPilotId);
-  if (!r) { document.getElementById('detailContent').innerHTML = '<button class="back-btn" onclick="showClasif()">← Volver</button>'; return; }
+  if (!r) { document.getElementById('detailContent').innerHTML = '<button class="back-btn" onclick="showClasif()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>Volver</button>'; return; }
 
   // Compute position
   const catResults = results.filter(x => x.categoria === r.categoria)
@@ -1977,7 +2027,7 @@ function renderDetail() {
   const nS = parseInt(cfg.numStages)||2, nC = parseInt(cfg.numTimeControls)||1;
 
   const colorCat = colorCategoria(cfg, r.categoria);
-  let html = `<button class="back-btn" onclick="showClasif()">← ${r.categoria}</button>
+  let html = `<button class="back-btn" onclick="showClasif()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>${r.categoria}</button>
     <div class="detail-hero" style="--cat:${colorCat}">
       <div class="detail-dorsal">${r.dorsal}</div>
       <div class="detail-info">
@@ -2020,12 +2070,23 @@ function renderDetail() {
       const actual = r.chActual[key];
       const exp = r.chExpected[key];
       const pen = r.chPens[key] || 0;
+      const dif = (r.chDiff || {})[key] || 0;
       if (actual || exp) {
         hasCH = true;
-        chHtml += `<div class="detail-cell">
+        // Con penalización se dice también QUÉ la causó y cuál era la hora
+        // prevista: sin eso, un piloto no puede saber si llegó tarde o se
+        // adelantó, que es justo lo que se pregunta al ver una penalización.
+        const motivo = pen > 0
+          ? (dif < 0
+              ? '<div class="ch-motivo adelanto">↑ ' + fmtPen(pen) + ' por adelantarse</div>'
+              : '<div class="ch-motivo retraso">↓ ' + fmtPen(pen) + ' por retraso</div>')
+          : '';
+        const previsto = pen > 0 && actual && exp
+          ? '<div class="ch-previsto">prevista ' + fmtHHMM(exp) + '</div>' : '';
+        chHtml += `<div class="detail-cell${pen > 0 ? ' con-pen' : ''}">
           <div class="detail-cell-label">CH${ctrl} · V${l}</div>
           <div class="detail-cell-val ${pen > 0 ? 'pen' : 'good'}">${actual || fmtHHMM(exp)}</div>
-          ${pen > 0 ? `<div style="font-size:0.62rem;color:var(--red);margin-top:2px">+${fmtPen(pen)} pen.</div>` : ''}
+          ${previsto}${motivo}
         </div>`;
       }
     }
@@ -2038,7 +2099,8 @@ function renderDetail() {
   if (hasPen) {
     html += `<div class="section-title">Penalizaciones</div><div class="detail-grid">`;
     if (r.startPen > 0) html += `<div class="detail-cell"><div class="detail-cell-label">Salida tardía</div><div class="detail-cell-val pen">${fmtPen(r.startPen)}</div></div>`;
-    if (r.tcPen > 0) html += `<div class="detail-cell"><div class="detail-cell-label">CHs</div><div class="detail-cell-val pen">${fmtPen(r.tcPen)}</div></div>`;
+    if (r.penRetraso > 0) html += `<div class="detail-cell"><div class="detail-cell-label">CH · por retraso</div><div class="detail-cell-val pen">${fmtPen(r.penRetraso)}</div></div>`;
+    if (r.penAdelanto > 0) html += `<div class="detail-cell"><div class="detail-cell-label">CH · por adelanto</div><div class="detail-cell-val pen">${fmtPen(r.penAdelanto)}</div></div>`;
     if (r.manPen > 0) html += `<div class="detail-cell"><div class="detail-cell-label">Especial</div><div class="detail-cell-val pen">${fmtPen(r.manPen)}</div></div>`;
     html += `<div class="detail-cell" style="border-color:rgba(248,113,113,0.3)">
       <div class="detail-cell-label">Σ Penalizaciones</div>
