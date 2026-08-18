@@ -504,6 +504,49 @@ body.light .detail-cell.con-pen{border-color:#e8a06a}
   padding-left:.9rem;position:relative}
 .clasif-ayuda::before{content:'';position:absolute;left:0;top:.35em;width:3px;height:calc(100% - .5em);
   border-radius:2px;background:var(--accent);opacity:.65}
+
+/* ── Cabecera ─────────────────────────────────────────────────────────────
+   El nombre de la prueba manda: es lo que identifica lo que estás mirando. El
+   estado de conexión y la fecha bajan a una segunda línea, en pequeño, para
+   dejarle todo el ancho. */
+.header{padding:.55rem .7rem;gap:.5rem;align-items:center}
+.header-mid{flex:1;min-width:0;margin:0 .15rem}
+.header-title{font-size:1.02rem;font-weight:800;letter-spacing:-.4px;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-linea2{display:flex;align-items:center;gap:.35rem;margin-top:2px;min-width:0}
+.header-linea2 .header-race{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.header-linea2 #dataSource{font-size:.55rem;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;flex-shrink:1}
+.status-age{font-size:.58rem}
+.theme-btn,.refresh-btn{width:32px;height:32px;padding:0;display:inline-flex;
+  align-items:center;justify-content:center;border-radius:10px;font-size:.9rem}
+
+/* Prueba terminada: sin el rojo de "en directo" ni el punto latiendo */
+.welcome-card.current.terminada{
+  background:radial-gradient(120% 100% at 0% 0%,rgba(148,163,184,.14),transparent 62%),var(--panel);
+  border-color:var(--border)}
+.welcome-card.terminada .welcome-card-title{color:var(--dim)}
+.welcome-card.terminada .welcome-card-livedot{background:var(--dim);animation:none;box-shadow:none}
+body.light .welcome-card.current.terminada{
+  background:radial-gradient(120% 100% at 0% 0%,rgba(100,116,139,.12),transparent 62%),#fff}
+
+/* ── Control horario: pasado o pendiente ──────────────────────────────────
+   El fichaje del comisario llega en vivo, así que la app sabe por dónde va el
+   piloto aunque no lleve penalización. Antes esa información estaba y no se
+   mostraba: la celda enseñaba una hora sin decir si era real o prevista. */
+.ch-celda .detail-cell-label{display:flex;align-items:center;justify-content:space-between;gap:.3rem}
+.ch-ok{color:#4ade80;font-weight:900;font-size:.72rem;line-height:1}
+body.light .ch-ok{color:#15803d}
+.ch-celda.pendiente{opacity:.55;border-style:dashed}
+.ch-celda.pendiente .detail-cell-val{color:var(--dim)}
+.ch-celda.pasado{border-color:rgba(74,222,128,.32)}
+.ch-celda.pasado.con-pen{border-color:rgba(251,146,60,.45)}
+body.light .ch-celda.pasado{border-color:#a7d8b4}
+.ch-resumen{float:right;font-size:.58rem;color:var(--dim);font-weight:600;
+  text-transform:none;letter-spacing:0}
+
+.header-title.dos-lineas{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;line-height:1.15;letter-spacing:-.3px}
 /* ── Buscador ─────────────────────────────────────────────────────────── */
 .buscador{position:relative;padding:0 .8rem .5rem}
 .buscador input{width:100%;padding:.6rem .8rem .6rem 2rem;border-radius:12px;
@@ -568,14 +611,16 @@ body.light .detail-cell.con-pen{border-color:#e8a06a}
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7"/><path d="M6.5 10v9.5h11V10"/></svg>
     </button>
   </div>
-  <div style="flex:1;min-width:0;margin:0 0.4rem">
+  <div class="header-mid">
     <div class="header-title" id="hTitle">Clasificación en Vivo</div>
-    <div class="header-race" id="hRace">Cargando…</div>
+    <div class="header-linea2">
+      <span class="status-dot offline" id="statusDot"></span>
+      <span class="status-age offline" id="statusAge">—</span>
+      <span class="header-race" id="hRace">Cargando…</span>
+      <span id="dataSource"></span>
+    </div>
   </div>
-  <div style="display:flex;align-items:center;gap:0.4rem;flex-shrink:0">
-    <span class="status-dot offline" id="statusDot"></span>
-    <span class="status-age offline" id="statusAge">—</span>
-    <span id="dataSource" style="font-size:0.55rem;white-space:nowrap"></span>
+  <div style="display:flex;align-items:center;gap:0.35rem;flex-shrink:0">
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Tema">☀️</button>
     <button class="refresh-btn" onclick="fetchData()">↻</button>
   </div>
@@ -596,7 +641,7 @@ body.light .detail-cell.con-pen{border-color:#e8a06a}
     <button class="welcome-card current" id="welcomeCurrent" onclick="enterCurrent()">
       <div class="welcome-card-header">
         <span class="welcome-card-icon">🏁</span>
-        <span class="welcome-card-title"><span class="welcome-card-livedot"></span>Carrera actual</span>
+        <span class="welcome-card-title"><span class="welcome-card-livedot"></span><span id="welcomeCurrentLabel">Carrera actual</span></span>
       </div>
       <div class="welcome-card-race" id="welcomeCurrentName">Cargando…</div>
       <div class="welcome-card-meta" id="welcomeCurrentMeta"></div>
@@ -636,7 +681,7 @@ body.light .detail-cell.con-pen{border-color:#e8a06a}
       border-radius:8px;padding:9px;font-size:0.76rem;font-family:inherit;cursor:pointer">
       🔍 Supervisión
     </button>
-    <div class="welcome-footer">v4.0 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v4.1 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -941,6 +986,8 @@ function setStatus(s) {
     } else {
       src.textContent = '';
     }
+    // El texto de la fuente cambia de largo; hay que rehacer el reparto.
+    try { ajustarLinea2(); } catch (e) {}
   }
 }
 
@@ -964,6 +1011,9 @@ function updateAge() {
     const d = document.getElementById('statusDot');
     if (d && !d.className.includes('offline')) d.className = 'status-dot stale';
   }
+  // "hace 1s" pasa a "hace 12min" y el ancho cambia: se rehace el reparto de la
+  // línea aquí, que es el único sitio por el que pasa siempre.
+  try { ajustarLinea2(); } catch (e) {}
 }
 
 function showToast(msg) {
@@ -1334,18 +1384,62 @@ function renderAll() {
   if (gView === 'welcome') {
     document.getElementById('hTitle').textContent = 'Enduro Revolution';
     document.getElementById('hRace').textContent = 'Selecciona una opción';
+    ajustarTitulo();
     renderWelcome();
     return;
   }
   if (!gData) return;
   document.getElementById('hTitle').textContent = cfg.name || 'Clasificación en Vivo';
   document.getElementById('hRace').textContent = cfg.date || '';
+  ajustarTitulo();
   renderTabBar();
   renderLiveBanner();
   if (gView === 'cats') { renderCatList(); renderStaleBanner(); }
   else if (gView === 'clasif') renderClasif();
   else if (gView === 'detail') renderDetail();
   else if (gView === 'archive') renderArchiveList();
+}
+
+// El nombre de la prueba es lo que identifica lo que estás mirando, así que
+// antes de recortarlo con puntos suspensivos se le baja el cuerpo hasta que
+// quepa. Solo por debajo del mínimo legible se deja que se corte.
+function ajustarTitulo() {
+  const t = document.getElementById('hTitle');
+  if (!t) return;
+  t.style.fontSize = '';
+  t.classList.remove('dos-lineas');
+  const max = 16.3, min = 13;             // px
+  let px = max;
+  while (t.scrollWidth > t.clientWidth + 1 && px > min) {
+    px -= 0.5;
+    t.style.fontSize = px + 'px';
+  }
+  // Si ni al mínimo legible cabe en una línea, se le dan dos antes que
+  // recortarlo: un nombre a medias no identifica la prueba.
+  if (t.scrollWidth > t.clientWidth + 1) {
+    t.classList.add('dos-lineas');
+    t.style.fontSize = '13px';
+  }
+  ajustarLinea2();
+}
+
+// La segunda línea lleva cuatro cosas (punto, antigüedad, fecha, fuente) en muy
+// poco ancho. Si no caben todas, se van cayendo por orden de menor utilidad:
+// primero la fecha —que ya sale en la portada y en la clasificación— y después
+// la fuente. Lo que nunca se cae es "hace Ns": es lo que dice si el dato vive.
+function ajustarLinea2() {
+  const l = document.querySelector('.header-linea2');
+  if (!l) return;
+  const fecha = document.getElementById('hRace');
+  const src   = document.getElementById('dataSource');
+  [fecha, src].forEach(e => { if (e) e.style.display = ''; });
+  // Los hijos llevan overflow:hidden, así que nunca desbordan al padre: se
+  // encogen y se comen su propio texto. Por eso se mira si algún hijo está
+  // recortado, no si la línea rebosa.
+  const recortada = () => Array.prototype.some.call(l.children,
+    e => e.style.display !== 'none' && e.scrollWidth > e.clientWidth + 1);
+  if (recortada() && fecha) fecha.style.display = 'none';
+  if (recortada() && src)   src.style.display   = 'none';
 }
 
 function renderWelcome() {
@@ -1368,12 +1462,27 @@ function renderWelcome() {
     ? [date, active ? active + ' pilotos' : ''].filter(Boolean).join(' · ')
     : 'Consulta las pruebas ya disputadas en el histórico';
   document.getElementById('welcomeCurrentMeta').textContent = meta;
+
+  // Una prueba terminada no es "la carrera actual en tiempo real": el rótulo
+  // se queda así hasta que el cronometrador la archiva, y mientras tanto dice
+  // algo que no es verdad. Con la carrera finalizada pasa a "Última carrera"
+  // y se apaga el punto de "en directo".
+  const terminada = hayCarrera && gData && gData.raceState === 'finished';
+  const rotulo = document.getElementById('welcomeCurrentLabel');
+  if (rotulo) rotulo.textContent = !hayCarrera ? 'Carrera actual'
+            : terminada ? 'Última carrera' : 'Carrera actual';
+  const tarj = document.getElementById('welcomeCurrent');
+  if (tarj) tarj.classList.toggle('terminada', !!terminada);
+
   // Indicar de dónde vienen los datos: si no hay tiempo real, puede estarse
   // mostrando una copia antigua servida por caché.
   const s = document.getElementById('welcomeCurrentSrc');
   if (s) {
     if (!hayCarrera) {
       s.textContent = '';
+    } else if (terminada) {
+      s.textContent = '🏁 Carrera finalizada · resultados definitivos';
+      s.style.color = 'var(--dim)';
     } else if (gFirebaseActive && gFirebaseHasData) {
       s.textContent = '⚡ En tiempo real';
       s.style.color = 'var(--green, #22c55e)';
@@ -2062,8 +2171,14 @@ function renderDetail() {
   }
 
   // CH times
-  let hasCH = false;
-  let chHtml = `<div class="section-title">Controles Horarios</div><div class="detail-grid">`;
+  let hasCH = false, chPasados = 0, chTotales = 0;
+  for (let l = 1; l <= r.nL; l++) for (let c = 1; c <= nC; c++) {
+    const k = `${l}-${c}`;
+    if (r.chActual[k] || r.chExpected[k]) { chTotales++; if (r.chActual[k]) chPasados++; }
+  }
+  let chHtml = `<div class="section-title">Controles Horarios`
+    + (chTotales ? `<span class="ch-resumen">${chPasados} de ${chTotales} pasados</span>` : '')
+    + `</div><div class="detail-grid">`;
   for (let l = 1; l <= r.nL; l++) {
     for (let ctrl = 1; ctrl <= nC; ctrl++) {
       const key = `${l}-${ctrl}`;
@@ -2083,10 +2198,14 @@ function renderDetail() {
           : '';
         const previsto = pen > 0 && actual && exp
           ? '<div class="ch-previsto">prevista ' + fmtHHMM(exp) + '</div>' : '';
-        chHtml += `<div class="detail-cell${pen > 0 ? ' con-pen' : ''}">
-          <div class="detail-cell-label">CH${ctrl} · V${l}</div>
+        const pasado = !!actual;
+        chHtml += `<div class="detail-cell ch-celda${pen > 0 ? ' con-pen' : ''}${pasado ? ' pasado' : ' pendiente'}">
+          <div class="detail-cell-label">
+            <span>CH${ctrl} · V${l}</span>
+            ${pasado ? '<span class="ch-ok" title="Ya ha pasado por este control">✓</span>' : ''}
+          </div>
           <div class="detail-cell-val ${pen > 0 ? 'pen' : 'good'}">${actual || fmtHHMM(exp)}</div>
-          ${previsto}${motivo}
+          ${pasado ? previsto + motivo : '<div class="ch-previsto">hora prevista</div>'}
         </div>`;
       }
     }
@@ -2167,6 +2286,7 @@ function navHome() {
 }
 
 // Hardware back button (Android)
+window.addEventListener('resize', () => { try { ajustarTitulo(); } catch(e) {} });
 window.addEventListener('popstate', (e) => {
   const state = e.state || {};
   const dest = state.view || 'welcome';
