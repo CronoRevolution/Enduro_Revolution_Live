@@ -679,6 +679,77 @@ body.light .mp.pasado .mp-caja{border-color:#a7d8b4}
 .mp-hito-fijo.hecho .et{color:var(--green)}
 .mapa-nota{margin-top:.9rem;font-size:.66rem;color:var(--dim);line-height:1.6;
   background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:.6rem .75rem}
+/* ── El dibujo del recorrido ───────────────────────────────────────────────
+   Colores propios y no los del tema general: esto es un paisaje, no una ficha.
+   Cambian entre claro y oscuro para que el monte no quede fosforito de noche. */
+.mapa-dibujo{--mapa-fondo:#12161a;--mapa-ruta:#4a5563;--mapa-tierra:#6b5636;
+  --mapa-verde:#2f6f45;--mapa-tronco:#4a3a26;--mapa-piedra:#4a5058;--mapa-agua:#2f6f8f;
+  background:var(--mapa-fondo);border:1px solid var(--border);border-radius:16px;
+  padding:.5rem .5rem .1rem;margin-bottom:.85rem}
+body.light .mapa-dibujo{--mapa-fondo:#f2f5f0;--mapa-ruta:#9aa5b1;--mapa-tierra:#b99a63;
+  --mapa-verde:#3f8f5a;--mapa-tronco:#7a6242;--mapa-piedra:#9aa2ab;--mapa-agua:#4c9fc4}
+.mapa-dibujo svg{width:100%;height:auto;display:block;overflow:visible}
+
+.mapa-dibujo .ruta{fill:none;stroke:var(--mapa-ruta);stroke-width:3.2;
+  stroke-linecap:round;stroke-dasharray:7 5;opacity:.85}
+.mapa-dibujo .tramo-crono{fill:none;stroke:var(--cat,var(--accent));stroke-width:6.5;
+  stroke-linecap:round;opacity:.42}
+.mapa-dibujo .tramo-crono.hecho{opacity:.95}
+
+.mapa-dibujo .fondo-pino path{fill:var(--mapa-verde);opacity:.32}
+.mapa-dibujo .fondo-pino.tenue path{opacity:.15}
+.mapa-dibujo .fondo-roca path{fill:var(--mapa-piedra);opacity:.28}
+
+.mapa-dibujo .mk .asta{stroke:var(--text);stroke-width:1.3;fill:none;opacity:.75}
+.mapa-dibujo .mk .banderin{fill:var(--dim)}
+.mapa-dibujo .mk.pasado .banderin{fill:var(--green)}
+.mapa-dibujo .mk.pasado.con-pen .banderin{fill:var(--amber)}
+.mapa-dibujo .mk .base{fill:var(--mapa-fondo);stroke:var(--dim);stroke-width:1.6}
+.mapa-dibujo .mk.pasado .base{stroke:var(--green)}
+.mapa-dibujo .mk .base.crono{fill:var(--cat,var(--accent));stroke:none;opacity:.55}
+.mapa-dibujo .mk.pasado .base.crono{opacity:1}
+.mapa-dibujo .mk .base.hito{fill:var(--dim);stroke:none}
+.mapa-dibujo .mk.aqui .base{stroke:var(--accent);stroke-width:2.2;fill:var(--accent)}
+.mapa-dibujo .mk .toque{fill:transparent}
+.mapa-dibujo .mk-salida .asta{stroke:var(--text);stroke-width:1.5;fill:none}
+.mapa-dibujo .mk-salida .cuadro-claro{fill:#f4f4f7;stroke:var(--mapa-ruta);stroke-width:.5}
+.mapa-dibujo .mk-salida .cuadro-oscuro{fill:#1c1c22}
+.mapa-dibujo .mk-salida .base{fill:var(--mapa-fondo);stroke:var(--text);stroke-width:1.8}
+
+/* Punto del piloto: late, para que se distinga de las marcas fijas. */
+.mapa-dibujo .pil{fill:var(--accent);stroke:#fff;stroke-width:1.4}
+body.light .mapa-dibujo .pil{stroke:#fff}
+.mapa-dibujo .pil-halo{fill:var(--accent);opacity:.25;animation:pilLate 1.9s ease-out infinite}
+@keyframes pilLate{0%{r:6;opacity:.42}70%{r:13;opacity:0}100%{r:13;opacity:0}}
+
+/* Adornos del terreno */
+.mapa-dibujo .ad-verde{fill:var(--mapa-verde)}
+.mapa-dibujo .ad-tronco{fill:var(--mapa-tronco)}
+.mapa-dibujo .ad-casa{fill:var(--mapa-piedra)}
+.mapa-dibujo .ad-gris{fill:var(--mapa-piedra)}
+.mapa-dibujo .ad-hueco{fill:var(--mapa-fondo)}
+.mapa-dibujo .ad-linea{stroke:var(--mapa-piedra);stroke-width:1.4;fill:none;stroke-linecap:round}
+.mapa-dibujo .ad-punto{fill:var(--mapa-piedra)}
+.mapa-dibujo .ad-ambar{fill:var(--amber)}
+.mapa-dibujo .ad-negro{stroke:#1a1a1a;stroke-width:1.4;stroke-linecap:round}
+.mapa-dibujo .ad-negro-r{fill:#1a1a1a}
+.mapa-dibujo .ad-azul{fill:var(--mapa-agua)}
+.mapa-dibujo .ad-blanco{fill:none;stroke:#fff;stroke-width:1.4}
+.mapa-dibujo .ad-tierra{fill:var(--mapa-tierra);opacity:.55}
+.mapa-dibujo .ad-tierra-l{stroke:var(--mapa-tierra);stroke-width:1.2;fill:none}
+.mapa-dibujo .ad-piedra{fill:var(--mapa-piedra)}
+.mapa-dibujo .ad-agua{stroke:var(--mapa-agua);stroke-width:1.7;fill:none;stroke-linecap:round}
+.mapa-dibujo .ad-marca{fill:var(--dim)}
+
+.mapa-leyenda{display:flex;flex-wrap:wrap;gap:.15rem .8rem;justify-content:center;
+  padding:.15rem 0 .35rem;font-size:.6rem;color:var(--dim)}
+.mapa-leyenda span{display:inline-flex;align-items:center;gap:.28rem}
+.mapa-leyenda i{width:13px;height:3px;border-radius:2px;display:inline-block}
+.mapa-leyenda .lg-ruta{background:repeating-linear-gradient(90deg,var(--dim) 0 3px,transparent 3px 6px)}
+.mapa-leyenda .lg-crono{background:var(--cat,var(--accent));height:5px}
+.mapa-leyenda .lg-ch{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--dim);background:none}
+.mapa-leyenda .lg-piloto{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.mapa-aviso{font-size:.6rem;color:var(--dim);line-height:1.5;padding:0 .35rem .5rem;text-align:center}
 .mapa-btn{display:inline-flex;align-items:center;gap:.35rem;background:var(--panel);
   border:1px solid var(--border);color:var(--text);border-radius:999px;
   padding:.35rem .75rem;font-size:.72rem;font-weight:700;font-family:inherit;cursor:pointer}
@@ -767,7 +838,7 @@ body.light .mp.pasado .mp-caja{border-color:#a7d8b4}
       border-radius:8px;padding:9px;font-size:0.76rem;font-family:inherit;cursor:pointer">
       🔍 Supervisión
     </button>
-    <div class="welcome-footer">v4.2 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v4.3 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -1386,7 +1457,7 @@ const contarCronosHechos=(rider,cfg,timing,stageData,nS)=>{
   return n;
 };
 
-/* ═════════════════════════════════════════════════════════════════════════/* ═══════════════════════════════════════════════════════════════════════════
+/* ═════════════════════════════════════════════════════════════════════════/* ═════════════════════════════════════════════════════════════════════════/* ═══════════════════════════════════════════════════════════════════════════
    RECORRIDO DE LA VUELTA — Enduro Revolution
    ---------------------------------------------------------------------------
    Dice en qué ORDEN se encuentra el piloto los controles horarios y los cronos
@@ -1412,7 +1483,7 @@ const contarCronosHechos=(rider,cfg,timing,stageData,nS)=>{
    Tipos de punto:
        {t:"ch",    n}       control horario n
        {t:"crono", n}       tramo cronometrado n
-       {t:"hito",  texto}   marca libre: repostaje, parque cerrado, avituallamiento…
+       {t:"hito",  tipo, texto}  referencia del recorrido (ver TIPOS_HITO)
    La salida y el fin de vuelta son implícitos: van siempre y no se editan.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -1455,8 +1526,9 @@ function recorridoNormalizado(cfg){
     if(p.t==="hito"){
       // Se conservan aunque estén vacíos: si al borrar el texto para reescribirlo
       // la fila desapareciera del editor, sería imposible corregir una referencia.
-      // Los vacíos no se dibujan en el mapa, eso lo decide quien pinta.
-      out.push({t:"hito",texto:String(p.texto==null?"":p.texto).slice(0,40)});
+      // Los vacíos de tipo libre no se dibujan en el mapa, eso lo decide quien pinta.
+      out.push({t:"hito",tipo:tipoHito(p.tipo).id,
+                texto:String(p.texto==null?"":p.texto).slice(0,40)});
       continue;
     }
     const n=parseInt(p.n);
@@ -1474,12 +1546,44 @@ function recorridoNormalizado(cfg){
   return out;
 }
 
+/* Tipos de referencia. El `dibujo` es lo que el mapa del móvil pinta en SVG:
+   NO se usan emojis en el dibujo porque en móviles antiguos la mitad salen como
+   un cuadrado vacío, y un cuadrado vacío en mitad del monte no informa de nada.
+   El `icono` sí es emoji y solo se usa en el editor del PC, donde se controla
+   qué sistema lo pinta. */
+var TIPOS_HITO=[
+  {id:"libre",          icono:"📍", dibujo:"marca",       etiqueta:"Referencia"},
+  // Seguridad y logística
+  {id:"repostaje",      icono:"⛽", dibujo:"surtidor",    etiqueta:"Repostaje"},
+  {id:"pueblo",         icono:"🏘", dibujo:"casas",       etiqueta:"Paso por pueblo"},
+  {id:"peligro",        icono:"⚠",  dibujo:"aviso",       etiqueta:"Zona peligrosa"},
+  {id:"parque",         icono:"🅿", dibujo:"parque",      etiqueta:"Parque cerrado"},
+  {id:"avituallamiento",icono:"💧", dibujo:"gota",        etiqueta:"Avituallamiento"},
+  // Terreno
+  {id:"monte",          icono:"🌲", dibujo:"pinos",       etiqueta:"Zona de monte"},
+  {id:"cortafuegos",    icono:"🟫", dibujo:"cortafuegos", etiqueta:"Cortafuegos"},
+  {id:"alternativa",    icono:"🔀", dibujo:"bifurcacion", etiqueta:"Alternativa / desvío"},
+  {id:"piedras",        icono:"🪨", dibujo:"piedras",     etiqueta:"Zona de piedras"},
+  {id:"vadeo",          icono:"🌊", dibujo:"agua",        etiqueta:"Vadeo"},
+];
+
+/* Devuelve SIEMPRE un tipo válido. Un id desconocido —una carrera guardada con
+   una versión que tenía otros tipos— cae en "libre" en vez de dejar el punto
+   sin dibujar. */
+function tipoHito(id){
+  for(var i=0;i<TIPOS_HITO.length;i++) if(TIPOS_HITO[i].id===id) return TIPOS_HITO[i];
+  return TIPOS_HITO[0];
+}
+
 /* Nombre corto de un punto, el mismo en la app central y en el móvil. */
 function nombrePunto(p){
   if(!p)return"";
   if(p.t==="ch")return"CH"+p.n;
   if(p.t==="crono")return"Crono "+p.n;
-  return p.texto||"Hito";
+  var tp=tipoHito(p.tipo);
+  // El texto propio manda; si no lo hay, vale el nombre del tipo. Solo se queda
+  // sin nombre una referencia libre y vacía, que es la que no se dibuja.
+  return (p.texto&&p.texto.trim()) || (tp.id!=="libre"?tp.etiqueta:"");
 }
 
 
@@ -1739,6 +1843,23 @@ function renderMapa() {
   // la barra verde va desde la salida hasta el último punto por el que pasó.
   let filas = '';
   let ultimoPasado = -1, indice = 0;
+  const visibles = [];   // los mismos puntos que la lista, para el dibujo de arriba
+
+  // Una referencia (repostaje, vadeo…) no se ficha en ningún sitio, así que por
+  // sí sola nunca consta como pasada. Pero si el piloto ya ha fichado en algo
+  // que va DESPUÉS, por fuerza ha pasado por ella: dejarla en gris entre dos
+  // puntos verdes daba a entender que se la había saltado. Es una deducción del
+  // orden del recorrido, no un dato, y así se dice al abrirla.
+  const visiblesPrevios = puntos.filter(q =>
+       !(q.t === 'hito' && !nombrePunto(q))
+    && !(q.t === 'ch' && !hayCHestaVuelta)
+    && !(q.t === 'crono' && !stageScores(cfg, q.n, lap, (cfg.categories || []).find(c => c.name === cat))));
+  const constaPasado = visiblesPrevios.map(q =>
+      !!piloto && (q.t === 'ch'    ? !!piloto.chActual[lap + '-' + q.n]
+                 : q.t === 'crono' ? !!piloto.stTimes[q.n + '-' + lap]
+                 : false));
+  const hitoDeducido = visiblesPrevios.map((q, k) =>
+      q.t === 'hito' && constaPasado.slice(k + 1).some(Boolean));
 
   // La bola de salida solo se pinta de verde cuando de verdad ha salido: en la
   // primera vuelta basta con que la carrera esté en marcha, en las siguientes
@@ -1749,7 +1870,9 @@ function renderMapa() {
         + (piloto && lap === 1 ? ' · ' + piloto.startStr : '') + '</div></div>';
 
   for (const p of puntos) {
-    if (p.t === 'hito' && !String(p.texto || '').trim()) continue;   // referencia sin nombre: no se dibuja
+    // Solo se salta la referencia que no tiene ni tipo ni texto: la que no sabría
+    // cómo llamarse. Una de tipo "repostaje" sin detalle ya se llama Repostaje.
+    if (p.t === 'hito' && !nombrePunto(p)) continue;
     if (p.t === 'ch' && !hayCHestaVuelta) continue;                   // esta vuelta no lleva CH
     if (p.t === 'crono' && !stageScores(cfg, p.n, lap, (cfg.categories || []).find(c => c.name === cat))) continue;
 
@@ -1810,18 +1933,30 @@ function renderMapa() {
           + '<div class="aviso">Tramo cronometrado ' + p.n + '. Lo que suma al total es el tiempo de los cronos; los enlaces entre controles, no.</div>';
       }
     } else {
-      derecha = '';
-      detalle = '<div class="aviso">Referencia del recorrido. No se cronometra ni ficha.</div>';
-      nota = 'Referencia';
+      const tp = tipoHito(p.tipo);
+      pasado = !!hitoDeducido[indice];
+      derecha = pasado
+        ? '<div class="mp-hora dim">✓</div><div class="mp-mas">ya pasada</div>' : '';
+      // El nombre de la fila puede ser el texto que escribió el cronometrador
+      // ("Barrio de Ibio"); entonces el subtítulo dice de qué se trata. Si el
+      // nombre ya ES la etiqueta del tipo, repetirla debajo sobra.
+      nota = (nombrePunto(p) !== tp.etiqueta) ? tp.etiqueta : '';
+      detalle = '<div class="aviso">' + tp.etiqueta
+              + '. Es una referencia del recorrido: no se cronometra ni se ficha en ella.'
+              + (pasado ? ' Consta que ha pasado por un punto posterior, así que por aquí ya ha pasado.' : '')
+              + '</div>';
     }
 
-    if (pasado) ultimoPasado = indice;
+    // Las referencias no pueden ser "el último sitio donde consta que está":
+    // su estado es deducido, no fichado, y el punto rojo sí afirma posición.
+    if (pasado && p.t !== 'hito') ultimoPasado = indice;
+    visibles.push({ p: p, clave: clave, pasado: pasado, conPen: conPen, indice: indice });
     const abierto = gMapaAbierto === clave;
     filas += '<div class="mp ' + (pasado ? 'pasado' : 'pend') + (conPen ? ' con-pen' : '')
       + (abierto ? ' abierto' : '') + '" data-i="' + indice + '">'
       + '<span class="mp-bola"></span>'
       + '<button class="mp-caja" onclick="mapaToggle(\'' + clave + '\')">'
-      +   '<span class="mp-ico">' + (p.t === 'ch' ? '🕐' : p.t === 'crono' ? '⏱' : '📍') + '</span>'
+      +   '<span class="mp-ico">' + (p.t === 'ch' ? '🕐' : p.t === 'crono' ? '⏱' : tipoHito(p.tipo).icono) + '</span>'
       +   '<span class="mp-txt"><span class="mp-nom">' + nombrePunto(p) + '</span>'
       +     (nota ? '<div class="mp-nota">' + nota + '</div>' : '') + '</span>'
       +   '<span class="mp-der">' + derecha + '</span>'
@@ -1836,6 +1971,7 @@ function renderMapa() {
   filas += '<div class="mp-hito-fijo' + (vueltaHecha ? ' hecho' : '') + '"><span class="mp-bola"></span>'
         + '<div class="et">🏁 Fin de la vuelta ' + lap + '</div></div>';
 
+  h += mapaDibujo(visibles, ref, cfg, lap, hayCHestaVuelta, color, piloto, ultimoPasado, cat);
   h += '<div class="mapa-pista" id="mapaPista">' + filas + '</div>';
 
   if (piloto && ultimoPasado >= 0 && !piloto.finished) {
@@ -1853,7 +1989,363 @@ function renderMapa() {
   // su posición sería decir que está en un sitio donde ya no está.
   const enEstaVuelta = !!piloto && !piloto.finished
                     && piloto.status === 'ok' && lap === vueltaActual;
-  requestAnimationFrame(() => mapaPintarAvance(ultimoPasado, enEstaVuelta));
+  requestAnimationFrame(() => {
+    mapaPintarAvance(ultimoPasado, enEstaVuelta);
+    // El dibujo se coloca después de pintar porque necesita medir el trazado ya
+    // en el documento; antes de eso getTotalLength devuelve cero.
+    try { mapaColocarDibujo(); } catch (e) { console.warn('mapa:', e); }
+    try { if (piloto) mapaColocarPiloto(ultimoPasado); } catch (e) {}
+    mapaEngancharToques();
+  });
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EL DIBUJO DEL RECORRIDO
+   ---------------------------------------------------------------------------
+   ES UN ESQUEMA, NO UN PLANO. No hay GPS, ni distancias, ni forma real del
+   trazado en ningún sitio del programa, así que el bucle no se parece al
+   circuito de verdad y no sirve para orientarse. Se dice en pantalla, debajo
+   del dibujo, porque alguien lo intentará.
+
+   Lo que sí es cierto: el reparto a lo largo del bucle es PROPORCIONAL A LOS
+   MINUTOS DE ENLACE que están configurados. Un enlace de 35 minutos ocupa más
+   trazado que uno de 15. Eso lo convierte en algo que informa y no solo adorna.
+
+   La forma se genera con un pseudoaleatorio sembrado con el nombre de la
+   prueba: la misma carrera dibuja siempre el mismo trazado. Sin eso, el mapa
+   cambiaría de forma cada 10 segundos, en cada repintado del directo.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const MAPA_W = 340, MAPA_H = 250;
+
+/* mulberry32 con semilla de texto. Determinista y suficiente para esto. */
+function mapaSemilla(txt) {
+  let h = 2166136261;
+  const s = String(txt || 'enduro');
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let a = h >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* Bucle cerrado de aspecto irregular: puntos repartidos en una elipse con el
+   radio movido al azar y unidos con curvas suaves (Catmull-Rom pasado a Bézier).
+   Sale algo que parece un trazado de monte y no un óvalo de circuito. */
+function mapaTrazado(semilla) {
+  const rnd = mapaSemilla(semilla);
+  const n = 13;
+  const cx = MAPA_W / 2, cy = MAPA_H / 2, rx = MAPA_W * 0.355, ry = MAPA_H * 0.335;
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const ang = -Math.PI / 2 + (i / n) * 2 * Math.PI;   // el punto 0 arriba: ahí va la salida
+    const k = 0.76 + 0.42 * rnd();
+    pts.push([cx + rx * k * Math.cos(ang), cy + ry * k * Math.sin(ang)]);
+  }
+  const r1 = (v) => Math.round(v * 10) / 10;
+  let d = 'M' + r1(pts[0][0]) + ' ' + r1(pts[0][1]);
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += 'C' + r1(c1[0]) + ' ' + r1(c1[1]) + ',' + r1(c2[0]) + ' ' + r1(c2[1])
+       + ',' + r1(p2[0]) + ' ' + r1(p2[1]);
+  }
+  return d + 'Z';
+}
+
+/* Dónde cae cada punto a lo largo del bucle, de 0 a 1.
+
+   Con controles horarios, los CH se colocan por sus minutos acumulados: es el
+   único dato real de "distancia" que existe. Los cronos y las referencias se
+   reparten dentro del hueco en el que están, porque de esos no se sabe en qué
+   punto del enlace caen — y no se va a inventar.
+
+   Sin controles horarios en la vuelta (categorías con chLaps), no hay minutos
+   que repartir y se espacian por igual. */
+function mapaFracciones(visibles, ref, cfg, lap, hayCH) {
+  const nC = parseInt(cfg.numTimeControls) || 1;
+  const out = new Array(visibles.length);
+  // Los minutos configurados llegan hasta el último control horario y ni un
+  // minuto más: de lo que va del último CH al final de la vuelta no hay dato.
+  // Si ahí hay cronos o referencias, hace falta reservarles sitio; si no, todos
+  // caían encima del último CH, que está en la fracción 1.0.
+  let colaTras = 0;
+  for (let k = visibles.length - 1; k >= 0 && visibles[k].p.t !== 'ch'; k--) colaTras++;
+  const escala = colaTras ? (1 - Math.min(0.30, 0.09 + 0.035 * colaTras)) : 1;
+
+  let total = 0;
+  const fracCH = {};
+  if (hayCH) {
+    let acc = 0;
+    for (let c = 1; c <= nC; c++) acc += getCHTime(ref, cfg, lap, c);
+    total = acc;
+    acc = 0;
+    for (let c = 1; c <= nC; c++) {
+      acc += getCHTime(ref, cfg, lap, c);
+      fracCH[c] = (total > 0 ? acc / total : c / nC) * escala;
+    }
+  }
+  // Todo se comprime un poco hacia dentro: con el reparto crudo, el último CH
+  // cae en la fracción 1.0, que es exactamente donde está la bandera de salida,
+  // y las dos marcas se solapaban. Así el último control queda justo antes de
+  // cerrar la vuelta, que además es donde está de verdad.
+  const MARGEN = 0.035;
+  let i = 0, prev = 0;
+  while (i < visibles.length) {
+    let j = i;
+    while (j < visibles.length && visibles[j].p.t !== 'ch') j++;
+    const hayCierre = j < visibles.length;
+    const fin = hayCierre ? (hayCH ? fracCH[visibles[j].p.n] : (j + 1) / (visibles.length + 1)) : 1;
+    const m = j - i;                                   // cuántos no-CH van en este hueco
+    for (let k = 0; k < m; k++) {
+      const centro = prev + ((k + 1) / (m + 1)) * (fin - prev);
+      // Ancho del tramo si es crono. Con tope absoluto: de lo que dura un crono
+      // no hay ningún dato, así que un hueco de 90 minutos no puede dibujar un
+      // tramo que ocupe media vuelta — sería afirmar una duración inventada. El
+      // tramo es un símbolo de "aquí se cronometra", no una medida.
+      const semi = Math.min(0.32 * (fin - prev) / (m + 1), 0.055);
+      out[i + k] = { f: centro, a: centro - semi, b: centro + semi };
+    }
+    if (hayCierre) { out[j] = { f: fin, a: fin, b: fin }; prev = fin; i = j + 1; }
+    else i = j;
+  }
+  for (let k = 0; k < out.length; k++) {
+    if (!out[k]) continue;
+    out[k].f = MARGEN + out[k].f * (1 - 2 * MARGEN);
+    out[k].a = MARGEN + out[k].a * (1 - 2 * MARGEN);
+    out[k].b = MARGEN + out[k].b * (1 - 2 * MARGEN);
+  }
+  return out;
+}
+
+/* Los adornos se dibujan en SVG, no con emojis: en móviles con Android viejo
+   media lista de emojis sale como un cuadrado vacío, y un cuadrado vacío en
+   mitad del monte no dice nada. Un triángulo verde siempre es un pino. */
+function mapaAdorno(dibujo, x, y) {
+  const g = (c) => '<g transform="translate(' + Math.round(x) + ',' + Math.round(y) + ')">' + c + '</g>';
+  switch (dibujo) {
+    case 'pinos':
+      return g('<path d="M0 3 L-4 3 L0 -6 L4 3 Z" class="ad-verde"/>'
+             + '<path d="M7 4 L4 4 L7 -2 L10 4 Z" class="ad-verde"/>'
+             + '<rect x="-0.7" y="3" width="1.4" height="2.5" class="ad-tronco"/>');
+    case 'casas':
+      return g('<path d="M-6 4 L-6 -1 L-2.5 -4 L1 -1 L1 4 Z" class="ad-casa"/>'
+             + '<path d="M2 4 L2 0 L5 -2 L8 0 L8 4 Z" class="ad-casa"/>');
+    case 'surtidor':
+      return g('<rect x="-3.5" y="-5" width="6" height="10" rx="1" class="ad-gris"/>'
+             + '<rect x="-2" y="-3.5" width="3" height="2.5" class="ad-hueco"/>'
+             + '<path d="M3 -2 h2.4 v5" class="ad-linea"/>');
+    case 'aviso':
+      return g('<path d="M0 -6 L6 5 L-6 5 Z" class="ad-ambar"/>'
+             + '<path d="M0 -2.5 v3.5" class="ad-negro"/><circle cy="2.6" r="0.8" class="ad-negro-r"/>');
+    case 'parque':
+      return g('<rect x="-5" y="-5" width="10" height="10" rx="2" class="ad-azul"/>'
+             + '<path d="M-1.6 3 v-6 h2.2 a2 2 0 0 1 0 4 h-2.2" class="ad-blanco"/>');
+    case 'gota':
+      return g('<path d="M0 -6 C3.4 -1.6 4.4 0.4 4.4 2 a4.4 4.4 0 0 1 -8.8 0 C-4.4 0.4 -3.4 -1.6 0 -6 Z" class="ad-azul"/>');
+    case 'cortafuegos':
+      return g('<path d="M-9 4 L-4 -4 L9 -4 L4 4 Z" class="ad-tierra"/>'
+             + '<path d="M-6.5 2 L-2.5 -2 M-2 2 L2 -2 M2.5 2 L6.5 -2" class="ad-tierra-l"/>');
+    case 'bifurcacion':
+      return g('<path d="M0 5 V0 M0 0 L-5 -5 M0 0 L5 -5" class="ad-linea"/>'
+             + '<circle cy="5" r="1.5" class="ad-punto"/>');
+    case 'piedras':
+      return g('<path d="M-7 4 L-4.5 -1 L-1 4 Z" class="ad-piedra"/>'
+             + '<path d="M-1 4 L2.5 -3 L7 4 Z" class="ad-piedra"/>');
+    case 'agua':
+      return g('<path d="M-8 -1 q3 -2.6 6 0 t6 0" class="ad-agua"/>'
+             + '<path d="M-8 3 q3 -2.6 6 0 t6 0" class="ad-agua"/>');
+    default:
+      return g('<circle r="3.2" class="ad-marca"/>');
+  }
+}
+
+/* El SVG completo. Las posiciones NO se calculan aquí: hacen falta las medidas
+   reales del trazado (getPointAtLength), y para eso tiene que estar ya en el
+   documento. Aquí se deja cada marca con su fracción anotada y las coloca
+   mapaColocarDibujo() en cuanto el navegador ha pintado. */
+function mapaDibujo(visibles, ref, cfg, lap, hayCH, color, piloto, ultimoPasado, cat) {
+  if (!visibles.length) return '';
+  const d = mapaTrazado((cfg.name || 'enduro') + '|' + (parseInt(cfg.numTimeControls) || 1));
+  const fr = mapaFracciones(visibles, ref, cfg, lap, hayCH);
+  const rnd = mapaSemilla((cfg.name || 'enduro') + '|fondo');
+
+  // Monte de fondo: pinos sueltos por las esquinas, lejos del trazado, solo
+  // para que no parezca un diagrama de flujo. Deterministas como el resto.
+  // Monte de fondo. Se colocan por ÁNGULO y radio, no tirando puntos al azar por
+  // todo el rectángulo y descartando los que caen dentro: así casi ninguno pasaba
+  // el filtro y el mapa salía pelado. Aquí se garantiza que quedan por fuera.
+  let fondo = '';
+  const cxF = MAPA_W / 2, cyF = MAPA_H / 2;
+  for (let i = 0; i < 22; i++) {
+    const ang = (i / 22) * 2 * Math.PI + rnd() * 0.24;
+    const k = 1.28 + rnd() * 0.30;                     // fuera del bucle, que llega a ~1.18
+    const x = cxF + MAPA_W * 0.355 * k * Math.cos(ang);
+    const y = cyF + MAPA_H * 0.335 * k * Math.sin(ang);
+    if (x < 6 || x > MAPA_W - 6 || y < 8 || y > MAPA_H - 6) continue;
+    const esc = (0.68 + rnd() * 0.55).toFixed(2);
+    fondo += rnd() < 0.78
+      ? '<g class="fondo-pino" transform="translate(' + Math.round(x) + ',' + Math.round(y)
+        + ') scale(' + esc + ')"><path d="M0 3 L-4 3 L0 -6 L4 3 Z"/></g>'
+      : '<g class="fondo-roca" transform="translate(' + Math.round(x) + ',' + Math.round(y)
+        + ') scale(' + esc + ')"><path d="M-4 3 L-1.5 -2.5 L2 1 L4 3 Z"/></g>';
+  }
+  // Y algo de relleno dentro del bucle, en el hueco central, para que no quede
+  // un agujero blanco en medio.
+  for (let i = 0; i < 7; i++) {
+    const ang = (i / 7) * 2 * Math.PI + rnd() * 0.5;
+    const k = 0.18 + rnd() * 0.34;
+    const x = cxF + MAPA_W * 0.355 * k * Math.cos(ang);
+    const y = cyF + MAPA_H * 0.335 * k * Math.sin(ang);
+    fondo += '<g class="fondo-pino tenue" transform="translate(' + Math.round(x) + ',' + Math.round(y)
+          + ') scale(' + (0.6 + rnd() * 0.4).toFixed(2) + ')">'
+          + '<path d="M0 3 L-4 3 L0 -6 L4 3 Z"/></g>';
+  }
+
+  let cronos = '', marcas = '';
+  for (let i = 0; i < visibles.length; i++) {
+    const v = visibles[i], f = fr[i];
+    if (!f) continue;
+    if (v.p.t === 'crono') {
+      cronos += '<path class="tramo-crono' + (v.pasado ? ' hecho' : '') + '" d="' + d
+             + '" data-a="' + f.a.toFixed(4) + '" data-b="' + f.b.toFixed(4) + '"></path>';
+    }
+    const tipo = v.p.t === 'hito' ? tipoHito(v.p.tipo).dibujo : '';
+    marcas += '<g class="mk mk-' + v.p.t + (v.pasado ? ' pasado' : '')
+           + (v.conPen ? ' con-pen' : '') + (v.indice === ultimoPasado && piloto ? ' aqui' : '')
+           + '" data-i="' + v.indice + '" data-f="' + f.f.toFixed(4) + '" data-tipo="' + tipo + '"'
+           + ' data-clave="' + v.clave + '" data-nom="' + nombrePunto(v.p).replace(/"/g, '&quot;') + '"></g>';
+  }
+
+  return '<div class="mapa-dibujo" style="--cat:' + color + '">'
+    + '<svg id="mapaSvg" viewBox="0 0 ' + MAPA_W + ' ' + MAPA_H + '" '
+    +   'role="img" aria-label="Esquema del recorrido de la vuelta ' + lap + '">'
+    +   '<g class="fondo">' + fondo + '</g>'
+    +   '<path id="mapaRuta" class="ruta" d="' + d + '"></path>'
+    +   cronos
+    +   '<g id="mapaAdornos"></g>'
+    +   '<g id="mapaMarcas">' + marcas + '</g>'
+    +   '<g id="mapaPiloto"></g>'
+    + '</svg>'
+    + '<div class="mapa-leyenda">'
+    +   '<span><i class="lg-ruta"></i>enlace</span>'
+    +   '<span><i class="lg-crono"></i>crono</span>'
+    +   '<span><i class="lg-ch"></i>control horario</span>'
+    +   (piloto ? '<span><i class="lg-piloto"></i>' + piloto.dorsal + '</span>' : '')
+    + '</div>'
+    + '<div class="mapa-aviso">Esquema orientativo: <b>no es un plano</b> y no sirve para '
+    +   'orientarse en el monte. Lo único a escala es el tiempo — los tramos largos del '
+    +   'dibujo son los enlaces de más minutos.</div>'
+    + '</div>';
+}
+
+/* Coloca las marcas sobre el trazado ya pintado. Se mide de verdad con
+   getPointAtLength en vez de calcular el punto a mano: la curva es una Bézier y
+   la posición por longitud de arco no tiene fórmula cerrada. */
+function mapaColocarDibujo() {
+  const ruta = document.getElementById('mapaRuta');
+  if (!ruta || !ruta.getTotalLength) return;
+  const L = ruta.getTotalLength();
+  if (!L) return;
+  const cx = MAPA_W / 2, cy = MAPA_H / 2;
+
+  // Tramos de crono: se recorta el propio trazado con guiones en vez de calcular
+  // una subcurva. Es exacto y no duplica geometría.
+  const tramos = document.querySelectorAll('.tramo-crono');
+  for (let i = 0; i < tramos.length; i++) {
+    const a = parseFloat(tramos[i].dataset.a), b = parseFloat(tramos[i].dataset.b);
+    const largo = Math.max(0, (b - a)) * L;
+    tramos[i].style.strokeDasharray = largo + ' ' + (L + 1);
+    tramos[i].style.strokeDashoffset = (-a * L) + '';
+  }
+
+  const adornos = document.getElementById('mapaAdornos');
+  if (adornos) adornos.innerHTML = '';
+  const marcas = document.querySelectorAll('#mapaMarcas .mk');
+  for (let i = 0; i < marcas.length; i++) {
+    const g = marcas[i];
+    const pt = ruta.getPointAtLength(parseFloat(g.dataset.f) * L);
+    const tipo = g.dataset.tipo;
+    let cuerpo;
+    if (g.classList.contains('mk-ch')) {
+      cuerpo = '<path class="asta" d="M0 0 v-11"/><path class="banderin" d="M0 -11 L9 -8.5 L0 -6 Z"/>'
+             + '<circle class="base" r="2.6"/>';
+    } else if (g.classList.contains('mk-crono')) {
+      cuerpo = '<circle class="base crono" r="3.4"/>';
+    } else {
+      cuerpo = '<circle class="base hito" r="2.4"/>';
+    }
+    // Zona táctil generosa: el dedo no acierta un círculo de 3 px.
+    g.innerHTML = cuerpo + '<circle class="toque" r="13"/><title>' + (g.dataset.nom || '') + '</title>';
+    g.setAttribute('transform', 'translate(' + pt.x.toFixed(1) + ',' + pt.y.toFixed(1) + ')');
+    g.style.cursor = 'pointer';
+
+    // El adorno del tipo va por fuera del bucle, para no taparlo.
+    if (tipo && adornos) {
+      let vx = pt.x - cx, vy = pt.y - cy;
+      const n = Math.hypot(vx, vy) || 1;
+      adornos.insertAdjacentHTML('beforeend', mapaAdorno(tipo, pt.x + (vx / n) * 15, pt.y + (vy / n) * 15));
+    }
+  }
+
+  // La salida y la meta son el mismo sitio: el arranque del trazado.
+  const p0 = ruta.getPointAtLength(0);
+  const marcasG = document.getElementById('mapaMarcas');
+  if (marcasG) {
+    marcasG.insertAdjacentHTML('afterbegin',
+      '<g class="mk-salida" transform="translate(' + p0.x.toFixed(1) + ',' + p0.y.toFixed(1) + ')">'
+      + '<path class="asta" d="M0 0 v-13"/>'
+      // Bandera a cuadros de verdad, no un rectángulo negro: es LA señal que
+      // todo el mundo reconoce como salida y meta sin necesidad de leyenda.
+      + '<rect class="cuadro-claro" x="0" y="-13" width="10.5" height="7"/>'
+      + '<rect class="cuadro-oscuro" x="0" y="-13" width="3.5" height="3.5"/>'
+      + '<rect class="cuadro-oscuro" x="7" y="-13" width="3.5" height="3.5"/>'
+      + '<rect class="cuadro-oscuro" x="3.5" y="-9.5" width="3.5" height="3.5"/>'
+      + '<circle class="base" r="3"/></g>');
+  }
+}
+
+/* Tocar un punto del dibujo abre su ficha en la lista de abajo y lleva la
+   pantalla hasta ella: el dibujo sitúa, la lista es la que tiene los datos. */
+function mapaEngancharToques() {
+  const marcas = document.querySelectorAll('#mapaMarcas .mk');
+  for (let i = 0; i < marcas.length; i++) {
+    marcas[i].addEventListener('click', function () {
+      const clave = this.dataset.clave;
+      const yaAbierto = gMapaAbierto === clave;
+      gMapaAbierto = yaAbierto ? null : clave;
+      renderMapa();
+      if (!yaAbierto) {
+        // Tras repintar hay que volver a buscar la fila: el nodo anterior ya no existe.
+        requestAnimationFrame(() => {
+          const fila = document.querySelector('.mp[data-i="' + this.dataset.i + '"]');
+          if (fila && fila.scrollIntoView) fila.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        });
+      }
+    });
+  }
+}
+
+/* El punto del piloto sobre el bucle, en el último sitio por el que consta que
+   pasó. Si no consta ninguno, no se dibuja: mejor nada que ponerlo en la salida
+   y dar a entender que está allí parado. */
+function mapaColocarPiloto(indiceUltimo) {
+  const cont = document.getElementById('mapaPiloto');
+  const ruta = document.getElementById('mapaRuta');
+  if (!cont || !ruta) return;
+  cont.innerHTML = '';
+  if (indiceUltimo < 0) return;
+  const g = document.querySelector('#mapaMarcas .mk[data-i="' + indiceUltimo + '"]');
+  if (!g) return;
+  const L = ruta.getTotalLength();
+  const pt = ruta.getPointAtLength(parseFloat(g.dataset.f) * L);
+  cont.innerHTML = '<g transform="translate(' + pt.x.toFixed(1) + ',' + pt.y.toFixed(1) + ')">'
+    + '<circle class="pil-halo" r="9"/><circle class="pil" r="4.6"/></g>';
 }
 
 /* Mejor tiempo de la categoría en un crono y vuelta concretos. */
