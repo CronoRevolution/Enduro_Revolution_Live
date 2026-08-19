@@ -658,6 +658,10 @@ body.light .mp.pasado .mp-caja{border-color:#a7d8b4}
 .mp-mas{font-size:.6rem;color:var(--dim);margin-top:1px;font-family:inherit}
 .mp-chevron{font-size:.6rem;color:var(--dim);flex-shrink:0;transition:transform .2s}
 .mp.abierto .mp-chevron{transform:rotate(90deg)}
+/* La fila abierta se tiñe del color de la categoría, igual que su punto en el
+   mapa: es la pista visual de que los dos son la misma cosa. */
+.mp.abierto .mp-caja{border-color:var(--cat,var(--accent));border-style:solid;
+  box-shadow:inset 3px 0 0 var(--cat,var(--accent))}
 
 /* Ficha que se abre al tocar un punto */
 .mp-det{margin:.15rem 0 .55rem;padding:.55rem .7rem;background:var(--panel2,var(--panel));
@@ -692,9 +696,17 @@ body.light .mapa-dibujo{--mapa-fondo:#f2f5f0;--mapa-ruta:#9aa5b1;--mapa-tierra:#
 
 .mapa-dibujo .ruta{fill:none;stroke:var(--mapa-ruta);stroke-width:3.2;
   stroke-linecap:round;stroke-dasharray:7 5;opacity:.85}
-.mapa-dibujo .tramo-crono{fill:none;stroke:var(--cat,var(--accent));stroke-width:6.5;
-  stroke-linecap:round;opacity:.42}
-.mapa-dibujo .tramo-crono.hecho{opacity:.95}
+/* El lazo del crono. Un tramo cronometrado se corre entero y se vuelve al mismo
+   punto del enlace, así que se dibuja colgando de la pista, no comiéndosela. */
+.mapa-dibujo .lazo ellipse{fill:var(--cat,var(--accent));fill-opacity:.10;
+  stroke:var(--cat,var(--accent));stroke-width:2.6;stroke-opacity:.55;
+  stroke-dasharray:5 3.5;transition:fill-opacity .2s,stroke-opacity .2s}
+.mapa-dibujo .lazo.hecho ellipse{fill-opacity:.26;stroke-opacity:1;stroke-dasharray:none}
+.mapa-dibujo .lazo.sel ellipse{fill-opacity:.34;stroke-opacity:1;stroke-width:3.4;
+  stroke-dasharray:none}
+.mapa-dibujo .lazo text{fill:var(--cat,var(--accent));font-size:9px;font-weight:800;
+  text-anchor:middle;font-family:inherit;paint-order:stroke;
+  stroke:var(--mapa-fondo);stroke-width:2.4;stroke-linejoin:round}
 
 .mapa-dibujo .fondo-pino path{fill:var(--mapa-verde);opacity:.32}
 .mapa-dibujo .fondo-pino.tenue path{opacity:.15}
@@ -711,6 +723,18 @@ body.light .mapa-dibujo{--mapa-fondo:#f2f5f0;--mapa-ruta:#9aa5b1;--mapa-tierra:#
 .mapa-dibujo .mk .base.hito{fill:var(--dim);stroke:none}
 .mapa-dibujo .mk.aqui .base{stroke:var(--accent);stroke-width:2.2;fill:var(--accent)}
 .mapa-dibujo .mk .toque{fill:transparent}
+/* Punto seleccionado: es lo que ata el dibujo con la fila de la lista. Tiene que
+   cantar, porque la pregunta que responde es «¿cuál de estos es el CH2?». */
+.mapa-dibujo .mk.sel .base{stroke:var(--cat,var(--accent));stroke-width:2.6}
+.mapa-dibujo .mk.sel .banderin{fill:var(--cat,var(--accent))}
+.mapa-dibujo .mk.sel{filter:drop-shadow(0 0 5px var(--cat,var(--accent)))}
+
+/* Etiquetas: sin ellas, un círculo del mapa no se sabe a qué fila corresponde. */
+.mapa-dibujo .etq rect{fill:var(--mapa-fondo);fill-opacity:.82;stroke:var(--border);stroke-width:.6}
+.mapa-dibujo .etq text{fill:var(--dim);font-size:7.4px;font-weight:700;text-anchor:middle;
+  font-family:inherit;letter-spacing:.2px}
+.mapa-dibujo .etq.sel rect{fill:var(--cat,var(--accent));fill-opacity:1;stroke:none}
+.mapa-dibujo .etq.sel text{fill:#fff;font-size:8px}
 .mapa-dibujo .mk-salida .asta{stroke:var(--text);stroke-width:1.5;fill:none}
 .mapa-dibujo .mk-salida .cuadro-claro{fill:#f4f4f7;stroke:var(--mapa-ruta);stroke-width:.5}
 .mapa-dibujo .mk-salida .cuadro-oscuro{fill:#1c1c22}
@@ -746,7 +770,8 @@ body.light .mapa-dibujo .pil{stroke:#fff}
 .mapa-leyenda span{display:inline-flex;align-items:center;gap:.28rem}
 .mapa-leyenda i{width:13px;height:3px;border-radius:2px;display:inline-block}
 .mapa-leyenda .lg-ruta{background:repeating-linear-gradient(90deg,var(--dim) 0 3px,transparent 3px 6px)}
-.mapa-leyenda .lg-crono{background:var(--cat,var(--accent));height:5px}
+.mapa-leyenda .lg-crono{width:11px;height:8px;border-radius:50%;background:none;
+  border:2px solid var(--cat,var(--accent))}
 .mapa-leyenda .lg-ch{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--dim);background:none}
 .mapa-leyenda .lg-piloto{width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .mapa-aviso{font-size:.6rem;color:var(--dim);line-height:1.5;padding:0 .35rem .5rem;text-align:center}
@@ -838,7 +863,7 @@ body.light .mapa-dibujo .pil{stroke:#fff}
       border-radius:8px;padding:9px;font-size:0.76rem;font-family:inherit;cursor:pointer">
       🔍 Supervisión
     </button>
-    <div class="welcome-footer">v4.3 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v4.4 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -1753,8 +1778,26 @@ function mapaNumVueltas(ref) { return getNumLaps(ref, (gData && gData.config) ||
 function mapaVerVuelta(n) { gMapaVuelta = n; gMapaAbierto = null; renderMapa(); }
 function mapaQuitarPiloto() { gMapaPiloto = null; gMapaAbierto = null; renderMapa(); }
 function mapaToggle(clave) {
-  gMapaAbierto = (gMapaAbierto === clave) ? null : clave;
+  const abriendo = gMapaAbierto !== clave;
+  gMapaAbierto = abriendo ? clave : null;
   renderMapa();
+  // Si se abre una fila con el dibujo fuera de pantalla, el punto se ilumina
+  // donde nadie lo ve. Se sube a enseñarlo: es justo lo que cuesta entender,
+  // qué punto del mapa es esta fila.
+  if (abriendo) requestAnimationFrame(mapaAsomarDibujo);
+}
+
+/* Deja el dibujo a la vista si se ha quedado por encima del borde superior.
+   No hace nada si ya se ve: mover la pantalla sin motivo desorienta más que
+   ayuda. */
+function mapaAsomarDibujo() {
+  const svg = document.getElementById('mapaSvg');
+  if (!svg || !svg.getBoundingClientRect) return;
+  const r = svg.getBoundingClientRect();
+  const alto = window.innerHeight || document.documentElement.clientHeight;
+  const seVe = r.bottom > 90 && r.top < alto - 60;
+  if (seVe) return;
+  if (svg.scrollIntoView) svg.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
 /* Minutos acumulados desde la salida hasta un CH, encadenando los tiempos de
@@ -1972,7 +2015,7 @@ function renderMapa() {
         + '<div class="et">🏁 Fin de la vuelta ' + lap + '</div></div>';
 
   h += mapaDibujo(visibles, ref, cfg, lap, hayCHestaVuelta, color, piloto, ultimoPasado, cat);
-  h += '<div class="mapa-pista" id="mapaPista">' + filas + '</div>';
+  h += '<div class="mapa-pista" id="mapaPista" style="--cat:' + color + '">' + filas + '</div>';
 
   if (piloto && ultimoPasado >= 0 && !piloto.finished) {
     h += '<div class="mapa-nota">📍 El punto rojo es el último por el que ha fichado. '
@@ -2207,18 +2250,19 @@ function mapaDibujo(visibles, ref, cfg, lap, hayCH, color, piloto, ultimoPasado,
           + '<path d="M0 3 L-4 3 L0 -6 L4 3 Z"/></g>';
   }
 
-  let cronos = '', marcas = '';
+  let marcas = '';
   for (let i = 0; i < visibles.length; i++) {
     const v = visibles[i], f = fr[i];
     if (!f) continue;
-    if (v.p.t === 'crono') {
-      cronos += '<path class="tramo-crono' + (v.pasado ? ' hecho' : '') + '" d="' + d
-             + '" data-a="' + f.a.toFixed(4) + '" data-b="' + f.b.toFixed(4) + '"></path>';
-    }
     const tipo = v.p.t === 'hito' ? tipoHito(v.p.tipo).dibujo : '';
+    // Nombre corto para la etiqueta del mapa: tiene que caber al lado del punto
+    // y, sobre todo, coincidir con lo que pone la fila de la lista.
+    const corto = v.p.t === 'ch' ? 'CH' + v.p.n : v.p.t === 'crono' ? 'C' + v.p.n : '';
     marcas += '<g class="mk mk-' + v.p.t + (v.pasado ? ' pasado' : '')
            + (v.conPen ? ' con-pen' : '') + (v.indice === ultimoPasado && piloto ? ' aqui' : '')
+           + (gMapaAbierto === v.clave ? ' sel' : '')
            + '" data-i="' + v.indice + '" data-f="' + f.f.toFixed(4) + '" data-tipo="' + tipo + '"'
+           + ' data-corto="' + corto + '"'
            + ' data-clave="' + v.clave + '" data-nom="' + nombrePunto(v.p).replace(/"/g, '&quot;') + '"></g>';
   }
 
@@ -2227,20 +2271,22 @@ function mapaDibujo(visibles, ref, cfg, lap, hayCH, color, piloto, ultimoPasado,
     +   'role="img" aria-label="Esquema del recorrido de la vuelta ' + lap + '">'
     +   '<g class="fondo">' + fondo + '</g>'
     +   '<path id="mapaRuta" class="ruta" d="' + d + '"></path>'
-    +   cronos
+    +   '<g id="mapaCronos"></g>'
     +   '<g id="mapaAdornos"></g>'
     +   '<g id="mapaMarcas">' + marcas + '</g>'
+    +   '<g id="mapaEtiquetas"></g>'
     +   '<g id="mapaPiloto"></g>'
     + '</svg>'
     + '<div class="mapa-leyenda">'
     +   '<span><i class="lg-ruta"></i>enlace</span>'
-    +   '<span><i class="lg-crono"></i>crono</span>'
+    +   '<span><i class="lg-crono"></i>crono (se entra y se sale por el mismo punto)</span>'
     +   '<span><i class="lg-ch"></i>control horario</span>'
     +   (piloto ? '<span><i class="lg-piloto"></i>' + piloto.dorsal + '</span>' : '')
     + '</div>'
     + '<div class="mapa-aviso">Esquema orientativo: <b>no es un plano</b> y no sirve para '
-    +   'orientarse en el monte. Lo único a escala es el tiempo — los tramos largos del '
-    +   'dibujo son los enlaces de más minutos.</div>'
+    +   'orientarse en el monte. Lo único a escala es el tiempo — los trechos largos del '
+    +   'dibujo son los enlaces de más minutos. Toca un punto del mapa o una fila de abajo '
+    +   'y se marcan a la vez.</div>'
     + '</div>';
 }
 
@@ -2253,48 +2299,100 @@ function mapaColocarDibujo() {
   const L = ruta.getTotalLength();
   if (!L) return;
   const cx = MAPA_W / 2, cy = MAPA_H / 2;
+  const punto = (f) => ruta.getPointAtLength(Math.max(0, Math.min(L, f * L)));
 
-  // Tramos de crono: se recorta el propio trazado con guiones en vez de calcular
-  // una subcurva. Es exacto y no duplica geometría.
-  const tramos = document.querySelectorAll('.tramo-crono');
-  for (let i = 0; i < tramos.length; i++) {
-    const a = parseFloat(tramos[i].dataset.a), b = parseFloat(tramos[i].dataset.b);
-    const largo = Math.max(0, (b - a)) * L;
-    tramos[i].style.strokeDasharray = largo + ' ' + (L + 1);
-    tramos[i].style.strokeDashoffset = (-a * L) + '';
-  }
+  /* Vector tangente al trazado en una fracción, y su normal apuntando HACIA
+     DENTRO del bucle. Los cronos se dibujan hacia el hueco central y los
+     adornos hacia fuera: así las dos familias no se pisan nunca. */
+  const ejes = (f) => {
+    const e = Math.max(1, L * 0.004);
+    const a = ruta.getPointAtLength(Math.max(0, f * L - e));
+    const b = ruta.getPointAtLength(Math.min(L, f * L + e));
+    let tx = b.x - a.x, ty = b.y - a.y;
+    const t = Math.hypot(tx, ty) || 1; tx /= t; ty /= t;
+    let nx = -ty, ny = tx;
+    const p = punto(f);
+    const dentro = (p.x + nx - cx) ** 2 + (p.y + ny - cy) ** 2 < (p.x - cx) ** 2 + (p.y - cy) ** 2;
+    if (!dentro) { nx = -nx; ny = -ny; }
+    return { p: p, tx: tx, ty: ty, nx: nx, ny: ny, ang: Math.atan2(ty, tx) * 180 / Math.PI };
+  };
 
+  const capaCronos = document.getElementById('mapaCronos');
   const adornos = document.getElementById('mapaAdornos');
+  const etiquetas = document.getElementById('mapaEtiquetas');
+  if (capaCronos) capaCronos.innerHTML = '';
   if (adornos) adornos.innerHTML = '';
+  if (etiquetas) etiquetas.innerHTML = '';
+
   const marcas = document.querySelectorAll('#mapaMarcas .mk');
   for (let i = 0; i < marcas.length; i++) {
     const g = marcas[i];
-    const pt = ruta.getPointAtLength(parseFloat(g.dataset.f) * L);
-    const tipo = g.dataset.tipo;
+    const f = parseFloat(g.dataset.f);
+    const ej = ejes(f), pt = ej.p;
+    const sel = g.classList.contains('sel');
     let cuerpo;
+
     if (g.classList.contains('mk-ch')) {
       cuerpo = '<path class="asta" d="M0 0 v-11"/><path class="banderin" d="M0 -11 L9 -8.5 L0 -6 Z"/>'
-             + '<circle class="base" r="2.6"/>';
+             + '<circle class="base" r="2.8"/>';
     } else if (g.classList.contains('mk-crono')) {
+      // Un crono no consume trazado: es un LAZO en el que se entra y se sale por
+      // el mismo punto. Dibujarlo como un trozo del bucle decía que el enlace
+      // pasa por dentro del tramo, que es justo lo que no ocurre.
+      const ry = 11, rx = 15;
+      const c = { x: pt.x + ej.nx * ry, y: pt.y + ej.ny * ry };
+      if (capaCronos) {
+        capaCronos.insertAdjacentHTML('beforeend',
+          '<g class="lazo' + (g.classList.contains('pasado') ? ' hecho' : '')
+          + (sel ? ' sel' : '') + '" data-clave="' + g.dataset.clave + '">'
+          + '<ellipse cx="' + c.x.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" rx="' + rx + '" ry="' + ry + '" '
+          +   'transform="rotate(' + ej.ang.toFixed(1) + ' ' + c.x.toFixed(1) + ' ' + c.y.toFixed(1) + ')"/>'
+          + '<text x="' + c.x.toFixed(1) + '" y="' + (c.y + 3.2).toFixed(1) + '">'
+          +   (g.dataset.corto || '') + '</text>'
+          + '</g>');
+      }
       cuerpo = '<circle class="base crono" r="3.4"/>';
     } else {
-      cuerpo = '<circle class="base hito" r="2.4"/>';
+      cuerpo = '<circle class="base hito" r="2.6"/>';
     }
+
     // Zona táctil generosa: el dedo no acierta un círculo de 3 px.
-    g.innerHTML = cuerpo + '<circle class="toque" r="13"/><title>' + (g.dataset.nom || '') + '</title>';
+    g.innerHTML = cuerpo + '<circle class="toque" r="14"/><title>' + (g.dataset.nom || '') + '</title>';
     g.setAttribute('transform', 'translate(' + pt.x.toFixed(1) + ',' + pt.y.toFixed(1) + ')');
     g.style.cursor = 'pointer';
 
-    // El adorno del tipo va por fuera del bucle, para no taparlo.
-    if (tipo && adornos) {
-      let vx = pt.x - cx, vy = pt.y - cy;
-      const n = Math.hypot(vx, vy) || 1;
-      adornos.insertAdjacentHTML('beforeend', mapaAdorno(tipo, pt.x + (vx / n) * 15, pt.y + (vy / n) * 15));
+    // Los adornos del terreno van por fuera del bucle, para no taparlo.
+    if (g.dataset.tipo && adornos) {
+      adornos.insertAdjacentHTML('beforeend',
+        mapaAdorno(g.dataset.tipo, pt.x - ej.nx * 15, pt.y - ej.ny * 15));
+    }
+
+    /* Etiqueta. Es lo que hace que el dibujo y la lista se reconozcan: sin un
+       nombre encima, un círculo del mapa no se sabe a qué fila corresponde.
+       Los CH y los cronos la llevan siempre; las referencias solo al tocarlas,
+       porque su dibujo ya las identifica y el texto ensuciaría. */
+    // El crono ya lleva su número DENTRO del lazo, y la referencia se identifica
+    // por su dibujo: repetirlo fuera en una pastilla era decir lo mismo dos veces
+    // en el sitio con menos espacio del mapa. Solo aparecen al seleccionarlas,
+    // y entonces con el nombre completo.
+    const soloAlTocar = g.classList.contains('mk-hito') || g.classList.contains('mk-crono');
+    const ponerEtiqueta = sel || !soloAlTocar;
+    if (ponerEtiqueta && etiquetas) {
+      const ex = pt.x - ej.nx * 13;
+      const ey = pt.y - ej.ny * 13;
+      const txt = sel ? (g.dataset.nom || '') : (g.dataset.corto || '');
+      const ancho = txt.length * 4.3 + 7;
+      etiquetas.insertAdjacentHTML('beforeend',
+        '<g class="etq' + (sel ? ' sel' : '') + '" data-clave="' + g.dataset.clave + '">'
+        + '<rect x="' + (ex - ancho / 2).toFixed(1) + '" y="' + (ey - 6).toFixed(1) + '" '
+        +   'width="' + ancho.toFixed(1) + '" height="12" rx="6"/>'
+        + '<text x="' + ex.toFixed(1) + '" y="' + (ey + 3.1).toFixed(1) + '">' + txt + '</text>'
+        + '</g>');
     }
   }
 
   // La salida y la meta son el mismo sitio: el arranque del trazado.
-  const p0 = ruta.getPointAtLength(0);
+  const p0 = punto(0);
   const marcasG = document.getElementById('mapaMarcas');
   if (marcasG) {
     marcasG.insertAdjacentHTML('afterbegin',
@@ -2308,22 +2406,30 @@ function mapaColocarDibujo() {
       + '<rect class="cuadro-oscuro" x="3.5" y="-9.5" width="3.5" height="3.5"/>'
       + '<circle class="base" r="3"/></g>');
   }
+
 }
 
 /* Tocar un punto del dibujo abre su ficha en la lista de abajo y lleva la
    pantalla hasta ella: el dibujo sitúa, la lista es la que tiene los datos. */
 function mapaEngancharToques() {
+  // El lazo del crono es más grande que su punto de entrada: si no se pudiera
+  // tocar, el usuario apuntaría al sitio evidente y no pasaría nada.
+  const lazos = document.querySelectorAll('#mapaCronos .lazo');
+  for (let j = 0; j < lazos.length; j++) {
+    lazos[j].style.cursor = 'pointer';
+    lazos[j].addEventListener('click', function () { mapaToggle(this.dataset.clave); });
+  }
   const marcas = document.querySelectorAll('#mapaMarcas .mk');
   for (let i = 0; i < marcas.length; i++) {
     marcas[i].addEventListener('click', function () {
-      const clave = this.dataset.clave;
-      const yaAbierto = gMapaAbierto === clave;
-      gMapaAbierto = yaAbierto ? null : clave;
+      const clave = this.dataset.clave, idx = this.dataset.i;
+      const abriendo = gMapaAbierto !== clave;
+      gMapaAbierto = abriendo ? clave : null;
       renderMapa();
-      if (!yaAbierto) {
+      if (abriendo) {
         // Tras repintar hay que volver a buscar la fila: el nodo anterior ya no existe.
         requestAnimationFrame(() => {
-          const fila = document.querySelector('.mp[data-i="' + this.dataset.i + '"]');
+          const fila = document.querySelector('.mp[data-i="' + idx + '"]');
           if (fila && fila.scrollIntoView) fila.scrollIntoView({ block: 'center', behavior: 'smooth' });
         });
       }
