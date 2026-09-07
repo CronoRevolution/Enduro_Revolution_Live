@@ -721,7 +721,6 @@ body.light .mapa-dibujo{--mapa-fondo:#f2f5f0;--mapa-ruta:#9aa5b1;--mapa-tierra:#
 .mapa-dibujo .mk .base.crono{fill:var(--cat,var(--accent));stroke:none;opacity:.55}
 .mapa-dibujo .mk.pasado .base.crono{opacity:1}
 .mapa-dibujo .mk .base.hito{fill:var(--dim);stroke:none}
-.mapa-dibujo .mk.aqui .base{stroke:var(--accent);stroke-width:2.2;fill:var(--accent)}
 .mapa-dibujo .mk .toque{fill:transparent}
 /* Punto seleccionado: es lo que ata el dibujo con la fila de la lista. Tiene que
    cantar, porque la pregunta que responde es «¿cuál de estos es el CH2?». */
@@ -741,9 +740,15 @@ body.light .mapa-dibujo{--mapa-fondo:#f2f5f0;--mapa-ruta:#9aa5b1;--mapa-tierra:#
 .mapa-dibujo .mk-salida .base{fill:var(--mapa-fondo);stroke:var(--text);stroke-width:1.8}
 
 /* Punto del piloto: late, para que se distinga de las marcas fijas. */
+/* El color del punto dice en qué situación está, no solo dónde. El latido es
+   solo para el que sigue en carrera: un piloto terminado no palpita. */
 .mapa-dibujo .pil{fill:var(--accent);stroke:#fff;stroke-width:1.4}
-body.light .mapa-dibujo .pil{stroke:#fff}
-.mapa-dibujo .pil-halo{fill:var(--accent);opacity:.25;animation:pilLate 1.9s ease-out infinite}
+.mapa-dibujo .pil-g.meta .pil{fill:var(--green)}
+.mapa-dibujo .pil-g.fuera .pil{fill:var(--amber)}
+.mapa-dibujo .pil-halo{fill:var(--accent);opacity:.25}
+.mapa-dibujo .pil-g.vivo .pil-halo{animation:pilLate 1.9s ease-out infinite}
+.mapa-dibujo .pil-g.meta .pil-halo{fill:var(--green);opacity:.22}
+.mapa-dibujo .pil-g.fuera .pil-halo{fill:var(--amber);opacity:.22}
 @keyframes pilLate{0%{r:6;opacity:.42}70%{r:13;opacity:0}100%{r:13;opacity:0}}
 
 /* Adornos del terreno */
@@ -774,7 +779,202 @@ body.light .mapa-dibujo .pil{stroke:#fff}
   border:2px solid var(--cat,var(--accent))}
 .mapa-leyenda .lg-ch{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--dim);background:none}
 .mapa-leyenda .lg-piloto{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.mapa-leyenda .lg-piloto.meta{background:var(--green)}
+.mapa-leyenda .lg-piloto.fuera{background:var(--amber)}
 .mapa-aviso{font-size:.6rem;color:var(--dim);line-height:1.5;padding:0 .35rem .5rem;text-align:center}
+/* ── Pilotos seguidos ──────────────────────────────────────────────────────
+   Un espectador mira a uno o dos de entre cien; esto es su atajo. */
+.pr-seg{background:none;border:0;padding:0 .1rem;font-size:1rem;line-height:1;
+  color:var(--border);cursor:pointer;flex-shrink:0;font-family:inherit;
+  transition:color .15s,transform .15s}
+.pr-seg.on{color:#ffc53d}
+.pr-seg:active{transform:scale(1.35)}
+body.light .pr-seg{color:#cfd4dd}
+body.light .pr-seg.on{color:#e0a800}
+
+.mapa-btn.seguir.on{border-color:#ffc53d;color:#ffc53d}
+body.light .mapa-btn.seguir.on{border-color:#e0a800;color:#a86f00}
+
+.seguidos{margin-top:1rem;text-align:left}
+.seguidos-tit{font-size:.68rem;font-weight:800;color:var(--dim);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:.45rem;padding-left:.15rem}
+.seg-fila{width:100%;display:flex;align-items:center;gap:.6rem;text-align:left;
+  background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--cat,var(--accent));
+  border-radius:12px;padding:.55rem .7rem;margin-bottom:.35rem;color:var(--text);
+  font-family:inherit;cursor:pointer}
+.seg-fila:active{transform:scale(.985)}
+.seg-dorsal{font-weight:800;font-size:1rem;color:var(--cat,var(--accent));min-width:1.9em;
+  font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+.seg-info{flex:1;min-width:0}
+.seg-nom{display:block;font-size:.8rem;font-weight:700;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.seg-cat{display:block;font-size:.63rem;color:var(--dim);margin-top:1px}
+.seg-der{text-align:right;flex-shrink:0;display:flex;flex-direction:column;gap:1px}
+.seg-pos{font-size:.86rem;font-weight:800}
+.seg-t{font-size:.68rem;color:var(--dim);
+  font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+
+/* Aviso corto: cosas que pasan y se van (enlace copiado, no se pudo guardar). */
+.aviso-breve{position:fixed;left:50%;bottom:1.4rem;transform:translateX(-50%) translateY(.6rem);
+  background:var(--text);color:var(--bg);padding:.6rem 1.1rem;border-radius:999px;
+  font-size:.78rem;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,.45);
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;
+  max-width:88vw;text-align:center}
+.aviso-breve.ver{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ── Comparador de dos pilotos ─────────────────────────────────────────────
+   El color no decora: azul es siempre el de la izquierda y naranja el de la
+   derecha, en las caras, en las cifras y en el marcador. */
+.comp-wrap{padding:0 .85rem 2rem;--a:#3987e5;--b:#d95926}
+body.light .comp-wrap{--a:#1f6fd0;--b:#c04a1d}
+.comp-cab{padding:.2rem 0 .8rem}
+.comp-tit{font-size:1.05rem;font-weight:800;letter-spacing:-.3px}
+.comp-sub{font-size:.7rem;color:var(--dim);margin-top:.2rem}
+.comp-caras{display:flex;align-items:stretch;gap:.5rem}
+.cara{flex:1;min-width:0;background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:.55rem .6rem;border-top:3px solid var(--border)}
+/* La franja de arriba va del color del LADO, no de la categoría: si los dos son
+   de la misma categoría salían las dos iguales y el código de color —azul el de
+   la izquierda, naranja el de la derecha— dejaba de leerse. */
+.cara.a{border-top-color:var(--a)}
+.cara.b{border-top-color:var(--b)}
+.cara-d{font-size:1.2rem;font-weight:800;font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+.cara.a .cara-d{color:var(--a)} .cara.b .cara-d{color:var(--b)}
+.cara-n{font-size:.72rem;font-weight:700;line-height:1.25;margin-top:1px}
+.cara-c{font-size:.6rem;color:var(--dim);margin-top:2px}
+.cara-vs{align-self:center;font-size:.66rem;font-weight:800;color:var(--dim);flex-shrink:0}
+.comp-total{margin-top:.6rem;padding:.5rem .7rem;border-radius:12px;font-size:.82rem;
+  font-weight:700;text-align:center;background:var(--panel);border:1px solid var(--border)}
+.comp-total.a{border-color:var(--a);color:var(--a)}
+.comp-total.b{border-color:var(--b);color:var(--b)}
+.comp-total.neutro{color:var(--dim);font-weight:600;font-size:.74rem}
+.comp-marcador{margin-top:.4rem;text-align:center;font-size:.72rem;color:var(--dim)}
+.comp-marcador b{font-size:.95rem}
+.comp-marcador b.a{color:var(--a)} .comp-marcador b.b{color:var(--b)}
+.comp-marcador span{font-size:.64rem}
+
+.comp-cabtabla,.comp-fila{display:grid;grid-template-columns:4.6rem 1fr 1fr 5.2rem;
+  gap:.35rem;align-items:center}
+.comp-cabtabla{font-size:.58rem;color:var(--dim);font-weight:800;text-transform:uppercase;
+  letter-spacing:.05em;padding:0 .55rem .3rem;text-align:right}
+.comp-cabtabla span:first-child{text-align:left}
+.comp-fila{background:var(--panel);border:1px solid var(--border);border-radius:11px;
+  padding:.45rem .55rem;margin-bottom:.3rem;font-size:.78rem}
+.comp-fila.ganaA{border-left:3px solid var(--a)}
+.comp-fila.ganaB{border-left:3px solid var(--b)}
+.cf-tramo{font-size:.66rem;font-weight:700;line-height:1.15}
+.cf-tramo small{display:block;font-size:.56rem;color:var(--dim);font-weight:600}
+.cf-ta,.cf-tb{text-align:right;font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace;
+  font-size:.75rem}
+.comp-fila.ganaA .cf-ta{color:var(--a);font-weight:700}
+.comp-fila.ganaB .cf-tb{color:var(--b);font-weight:700}
+.cf-der{text-align:right;display:flex;flex-direction:column;line-height:1.2}
+.cf-dif{font-size:.72rem;font-weight:800;
+  font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+.cf-dif.a{color:var(--a)} .cf-dif.b{color:var(--b)}
+.cf-acum{font-size:.58rem;color:var(--dim);
+  font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+.cf-falta{font-size:.58rem;color:var(--dim)}
+.comp-pen{margin-top:.8rem;padding:.55rem .7rem;background:var(--panel);
+  border:1px solid var(--border);border-radius:12px;font-size:.74rem;text-align:center}
+.comp-pen b.a{color:var(--a)} .comp-pen b.b{color:var(--b)}
+.comp-nota{font-size:.63rem;color:var(--dim);line-height:1.55;margin-top:.35rem}
+
+/* En pantallas estrechas la rejilla de cuatro columnas no cabe: se aprieta lo
+   fijo (nombre del tramo y bloque de diferencias) y se baja el cuerpo. Probado
+   a 320 px, que es el móvil más estrecho que sigue en circulación. */
+@media (max-width:360px){
+  .comp-cabtabla,.comp-fila{grid-template-columns:3.6rem 1fr 1fr 4.3rem;gap:.25rem}
+  .comp-fila{padding:.42rem .45rem;font-size:.72rem}
+  .cf-ta,.cf-tb{font-size:.68rem}
+  .cf-dif{font-size:.66rem}
+  .cf-acum{font-size:.54rem}
+  .cf-tramo{font-size:.6rem}
+  .cf-tramo small{font-size:.52rem}
+  .comp-cabtabla{font-size:.53rem}
+}
+
+.comp-elegir{width:100%;display:flex;align-items:center;gap:.6rem;background:var(--panel);
+  border:1px solid var(--border);border-radius:11px;padding:.5rem .65rem;margin-bottom:.3rem;
+  color:var(--text);font-family:inherit;cursor:pointer;text-align:left}
+.ce-dorsal{font-weight:800;min-width:2em;
+  font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+.ce-nom{flex:1;min-width:0;font-size:.76rem;font-weight:600;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.ce-t{font-size:.68rem;color:var(--dim);
+  font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+.ce-t.dim{opacity:.5}
+/* ── Evolución por vuelta ──────────────────────────────────────────────────
+   Marcas finas, rejilla discreta y etiquetas solo donde dicen algo. El texto
+   nunca lleva el color de la serie: el color lo carga la marca. */
+.ev-caja{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:.6rem .7rem .5rem;margin-bottom:.7rem}
+.ev-tit{font-size:.72rem;font-weight:800;margin-bottom:.15rem}
+.ev-tit small{font-weight:600;color:var(--dim);font-size:.62rem}
+.ev-caja svg{width:100%;height:auto;display:block;overflow:visible}
+.ev-barra{fill:var(--cat,var(--accent));opacity:.55}
+.ev-barra.mejor{opacity:1}
+.ev-hueca{fill:none;stroke:var(--border);stroke-width:1;stroke-dasharray:3 3}
+.ev-linea{fill:none;stroke:var(--cat,var(--accent));stroke-width:2;
+  stroke-linejoin:round;stroke-linecap:round}
+.ev-punto{fill:var(--cat,var(--accent));stroke:var(--panel);stroke-width:2}
+.ev-ref{stroke:var(--dim);stroke-width:1;stroke-dasharray:4 4;opacity:.55}
+.ev-etq{fill:var(--text);font-size:8.5px;font-weight:800;text-anchor:middle;font-family:inherit}
+.ev-eje{fill:var(--dim);font-size:8px;font-weight:600;text-anchor:middle;font-family:inherit}
+.ev-eje.izq{text-anchor:end}
+.ev-pie{font-size:.58rem;color:var(--dim);line-height:1.5;margin-top:.15rem;
+  display:flex;flex-direction:column;gap:1px}
+.ev-leyref{font-weight:700}
+/* ── Destacar lo seguido ───────────────────────────────────────────────────
+   El oro solo significa "es de los tuyos". No se usa para nada más, para que
+   verlo en cualquier pantalla quiera decir siempre lo mismo. */
+/* El piloto seguido NO se marca cambiando el borde: el primer puesto ya lleva
+   borde dorado y en la fila del líder no se distinguía si el oro decía "va
+   primero" o "es de los tuyos". La marca es la barra de la izquierda más la
+   estrella encendida, que no compiten con nada. */
+.pilot-row.seguido{box-shadow:inset 4px 0 0 #ffc53d}
+body.light .pilot-row.seguido{box-shadow:inset 4px 0 0 #e0a800}
+.pilot-row.seguido .pr-seg{font-size:1.15rem}
+.cat-card.con-seguidos{border-color:#ffc53d}
+body.light .cat-card.con-seguidos{border-color:#e0a800}
+.cat-seg{margin-left:.35rem;font-size:.6rem;font-weight:800;color:#ffc53d;
+  background:rgba(255,197,61,.14);border-radius:999px;padding:.1rem .38rem;
+  vertical-align:middle;white-space:nowrap}
+body.light .cat-seg{color:#8a6400;background:rgba(224,168,0,.18)}
+
+.seg-invita{width:100%;display:flex;align-items:center;gap:.7rem;margin-top:1rem;
+  background:var(--panel);border:1px dashed var(--border);border-radius:14px;
+  padding:.7rem .8rem;color:var(--text);font-family:inherit;cursor:pointer;text-align:left}
+.seg-invita .si-ico{font-size:1.3rem;color:#ffc53d;line-height:1}
+.seg-invita b{display:block;font-size:.82rem}
+.seg-invita small{display:block;font-size:.66rem;color:var(--dim);margin-top:1px}
+.seg-mas{width:100%;background:transparent;border:1px dashed var(--border);
+  border-radius:12px;padding:.45rem;color:var(--dim);font-size:.7rem;font-weight:700;
+  font-family:inherit;cursor:pointer;margin-top:.15rem}
+
+/* Pantalla de elegir a quién seguir */
+.sg-wrap{padding:0 .85rem 2rem}
+.sg-cab{padding:.2rem 0 .7rem}
+.sg-tit{font-size:1.05rem;font-weight:800;letter-spacing:-.3px}
+.sg-sub{font-size:.68rem;color:var(--dim);margin-top:.25rem;line-height:1.5}
+.sg-grupo{font-size:.6rem;font-weight:800;color:var(--dim);letter-spacing:.07em;
+  text-transform:uppercase;margin:.6rem 0 .35rem .15rem}
+.sg-fila{width:100%;display:flex;align-items:center;gap:.6rem;background:var(--panel);
+  border:1px solid var(--border);border-radius:12px;padding:.5rem .65rem;margin-bottom:.3rem;
+  color:var(--text);font-family:inherit;cursor:pointer;text-align:left;
+  border-left:3px solid var(--cat,var(--accent))}
+.sg-fila.on{border-color:#ffc53d;border-left-color:#ffc53d;background:rgba(255,197,61,.07)}
+body.light .sg-fila.on{border-color:#e0a800;border-left-color:#e0a800;background:rgba(224,168,0,.09)}
+.sg-estrella{font-size:1.05rem;line-height:1;color:var(--border);flex-shrink:0}
+.sg-fila.on .sg-estrella{color:#ffc53d}
+body.light .sg-fila.on .sg-estrella{color:#e0a800}
+.sg-dorsal{font-weight:800;min-width:2em;
+  font-family:'Lucida Console','DejaVu Sans Mono',Menlo,monospace}
+.sg-info{flex:1;min-width:0}
+.sg-nom{display:block;font-size:.78rem;font-weight:700;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.sg-cat{display:block;font-size:.62rem;color:var(--dim);margin-top:1px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sg-vacio{font-size:.7rem;color:var(--dim);text-align:center;padding:1.2rem .5rem;line-height:1.6}
 .mapa-btn{display:inline-flex;align-items:center;gap:.35rem;background:var(--panel);
   border:1px solid var(--border);color:var(--text);border-radius:999px;
   padding:.35rem .75rem;font-size:.72rem;font-weight:700;font-family:inherit;cursor:pointer}
@@ -829,6 +1029,7 @@ body.light .mapa-dibujo .pil{stroke:#fff}
       <div class="welcome-card-meta" id="welcomeCurrentMeta"></div>
       <div class="welcome-card-meta" id="welcomeCurrentSrc" style="margin-top:4px;font-size:0.72rem"></div>
     </button>
+    <div id="seguidosBox"></div>
     <div id="instalarBox" style="display:none;margin-top:12px;padding:12px;border-radius:10px;
       background:rgba(232,35,26,0.10);border:1px solid rgba(232,35,26,0.45)">
       <div style="font-weight:800;font-size:0.86rem;color:#ff6b6b;margin-bottom:4px">
@@ -863,7 +1064,7 @@ body.light .mapa-dibujo .pil{stroke:#fff}
       border-radius:8px;padding:9px;font-size:0.76rem;font-family:inherit;cursor:pointer">
       🔍 Supervisión
     </button>
-    <div class="welcome-footer">v4.4 · Enduro Revolution © 2025</div>
+    <div class="welcome-footer">v4.8 · Enduro Revolution © 2025</div>
   </div>
 </div>
 
@@ -906,6 +1107,18 @@ body.light .mapa-dibujo .pil{stroke:#fff}
   </div>
 </div>
 
+<!-- VIEW: Elegir pilotos a seguir -->
+<div class="view" id="vSeguir">
+  <button class="back-btn" onclick="history.back()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>Inicio</button>
+  <div class="sg-wrap" id="seguirBody"></div>
+</div>
+
+<!-- VIEW: Comparar dos pilotos -->
+<div class="view" id="vComparar">
+  <button class="back-btn" onclick="compararVolver()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg><span id="compVolverTxt">Volver</span></button>
+  <div class="comp-wrap" id="compBody"></div>
+</div>
+
 <!-- VIEW: Mapa de la prueba -->
 <div class="view" id="vMapa">
   <button class="back-btn" onclick="mapaVolver()"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg><span id="mapaVolverTxt">Volver</span></button>
@@ -935,8 +1148,14 @@ body.light .mapa-dibujo .pil{stroke:#fff}
 <script>
 // Paleta de categorías (misma en fichas y en la clasificación, para que una
 // categoría tenga siempre el mismo color en toda la app).
+/* Paleta de categorías, comprobada con el validador de la skill de gráficos en
+   las dos superficies reales de la app (#15151b oscuro, #ffffff claro).
+   El octavo color era #5db1a8 y suspendía dos comprobaciones sobre fondo
+   oscuro: se salía de la banda de luminosidad y quedaba por debajo del mínimo
+   de saturación, o sea que a la octava categoría le tocaba un gris. Sustituido
+   por #2f9e8f, con el que las ocho pasan todas las comprobaciones. */
 const COLORES_CAT = ['#3987e5','#d95926','#199e70','#c98500','#d55181','#9085e9',
-                     '#e66767','#5db1a8'];
+                     '#e66767','#2f9e8f'];
 function colorCategoria(cfg, nombre){
   const nombres = (cfg && cfg.categories || []).map(c => c.name);
   const i = nombres.indexOf(nombre);
@@ -1698,6 +1917,9 @@ function buildResults(schedule, cfg, timing, stageData) {
 // ── Render ────────────────────────────────────────────────────────────────
 function renderAll() {
   const cfg = (gData && gData.config) || {};
+  // Un enlace ?dorsal= puede abrirse antes de que hayan llegado los datos, así
+  // que se atiende aquí y no en el arranque.
+  try { atenderEnlaceDirecto(); } catch (e) {}
   // En welcome, el header muestra el branding de bienvenida.
   // No requiere gData para mostrarse.
   if (gView === 'welcome') {
@@ -1717,6 +1939,8 @@ function renderAll() {
   else if (gView === 'clasif') renderClasif();
   else if (gView === 'detail') renderDetail();
   else if (gView === 'mapa') renderMapa();
+  else if (gView === 'comparar') renderComparar();
+  else if (gView === 'seguir') renderSeguir();
   else if (gView === 'archive') renderArchiveList();
 }
 
@@ -2014,10 +2238,39 @@ function renderMapa() {
   filas += '<div class="mp-hito-fijo' + (vueltaHecha ? ' hecho' : '') + '"><span class="mp-bola"></span>'
         + '<div class="et">🏁 Fin de la vuelta ' + lap + '</div></div>';
 
-  h += mapaDibujo(visibles, ref, cfg, lap, hayCHestaVuelta, color, piloto, ultimoPasado, cat);
+  /* Dónde va el punto del piloto y qué significa. Son tres situaciones
+     distintas y antes se trataban como una sola, que es de donde venía el
+     error: a un piloto ya finalizado se le seguía poniendo el punto en el
+     último sitio donde fichó, como si estuviera allí parado.
+
+       · corriendo  → su último paso conocido. Es "va por aquí".
+       · terminado  → la meta. Ha completado la vuelta entera, con fichajes o
+                      sin ellos; dejarlo a mitad del bucle era decir que se
+                      quedó ahí.
+       · retirado   → el último sitio del que hay constancia, que es una cosa
+                      distinta de dónde está: se dice con esas palabras. */
+  // Terminado es SOLO lo que el cronometrador ha dado por finalizado, no "ha
+  // hecho todas las vueltas". Es la misma distinción que ya hace la pila de la
+  // clasificación: vueltas completas sin confirmar todavía no es una F. Si el
+  // mapa dijera "ha terminado" antes que la pila, se contradirían entre ellos.
+  const terminado = !!piloto && piloto.finished && piloto.status === 'ok';
+  const fuera     = !!piloto && (piloto.status === 'dnf' || piloto.status === 'dsq' || piloto.autoDsq);
+  let marcaPiloto = null;
+  if (terminado && lap === nL)              marcaPiloto = { modo: 'meta' };
+  else if (fuera && lap === vueltaActual)   marcaPiloto = { modo: 'punto', i: ultimoPasado, tono: 'fuera' };
+  else if (!terminado && !fuera && lap === vueltaActual)
+                                            marcaPiloto = { modo: 'punto', i: ultimoPasado, tono: 'vivo' };
+
+  h += mapaDibujo(visibles, ref, cfg, lap, hayCHestaVuelta, color, piloto, ultimoPasado, cat, marcaPiloto);
   h += '<div class="mapa-pista" id="mapaPista" style="--cat:' + color + '">' + filas + '</div>';
 
-  if (piloto && ultimoPasado >= 0 && !piloto.finished) {
+  if (marcaPiloto && marcaPiloto.modo === 'meta') {
+    h += '<div class="mapa-nota">🏁 Ha terminado su carrera: el punto está en la meta. '
+       + 'Los controles sin hora son los que no llegaron a ficharse — el tiempo no depende de ellos.</div>';
+  } else if (marcaPiloto && marcaPiloto.tono === 'fuera') {
+    h += '<div class="mapa-nota">El punto marca el <b>último sitio del que hay constancia</b>, '
+       + 'no dónde está: no terminó la prueba.</div>';
+  } else if (marcaPiloto && ultimoPasado >= 0) {
     h += '<div class="mapa-nota">📍 El punto rojo es el último por el que ha fichado. '
        + 'Lo que viene después son horas previstas, no reales.</div>';
   } else if (!piloto) {
@@ -2037,8 +2290,15 @@ function renderMapa() {
     // El dibujo se coloca después de pintar porque necesita medir el trazado ya
     // en el documento; antes de eso getTotalLength devuelve cero.
     try { mapaColocarDibujo(); } catch (e) { console.warn('mapa:', e); }
-    try { if (piloto) mapaColocarPiloto(ultimoPasado); } catch (e) {}
+    try { mapaColocarPiloto(marcaPiloto); } catch (e) {}
     mapaEngancharToques();
+    // Con 8 vueltas las pestañas no caben y la activa puede quedar fuera de
+    // pantalla: al entrar desde un piloto que va por la 6ª, se abría en la 6ª
+    // pero se veía la 1ª. Se lleva a la vista sin mover el resto de la página.
+    try {
+      const act = document.querySelector('.mv-tab.on');
+      if (act && act.scrollIntoView) act.scrollIntoView({ inline: 'center', block: 'nearest' });
+    } catch (e) {}
   });
 }
 
@@ -2113,17 +2373,33 @@ function mapaTrazado(semilla) {
 function mapaFracciones(visibles, ref, cfg, lap, hayCH) {
   const nC = parseInt(cfg.numTimeControls) || 1;
   const out = new Array(visibles.length);
+  /* Con UN SOLO control horario no hay proporción que respetar: sus minutos
+     cubren la vuelta entera, así que repartir por tiempo coloca el control
+     donde salga y no donde está. Es el caso del Enduro Sprint —un CH justo
+     antes del primer crono y el resto de la vuelta sin controles—, donde el
+     reparto por tiempo dejaba el control a media vuelta y los tres cronos
+     apretados detrás. Sin dato que respetar, se espacian por igual, que al
+     menos respeta el ORDEN, que sí es cierto. */
+  const proporcional = hayCH && nC >= 2;
   // Los minutos configurados llegan hasta el último control horario y ni un
   // minuto más: de lo que va del último CH al final de la vuelta no hay dato.
   // Si ahí hay cronos o referencias, hace falta reservarles sitio; si no, todos
   // caían encima del último CH, que está en la fracción 1.0.
   let colaTras = 0;
   for (let k = visibles.length - 1; k >= 0 && visibles[k].p.t !== 'ch'; k--) colaTras++;
-  const escala = colaTras ? (1 - Math.min(0.30, 0.09 + 0.035 * colaTras)) : 1;
+  // Reparto de sitio para esa cola. El primer intento daba una tajada fija y
+  // pequeña, pensando en un enduro de monte donde después del último control
+  // apenas hay nada. En un Enduro Sprint —1 solo control y tres cronos por
+  // vuelta— eso metía los tres cronos en un cuarto del dibujo, montados unos
+  // sobre otros, y dejaba tres cuartos de enlace vacío. Justo al revés de lo
+  // que es un sprint. Con un único control no se distorsiona nada: sus minutos
+  // cubren la vuelta entera y no hay proporción que respetar.
+  const escala = colaTras ? (1 - Math.min(0.62, 0.08 + 0.13 * colaTras)) : 1;
+  const nCtrl = Math.max(0, parseInt(cfg.numTimeControls) || 0);
 
   let total = 0;
   const fracCH = {};
-  if (hayCH) {
+  if (proporcional) {
     let acc = 0;
     for (let c = 1; c <= nC; c++) acc += getCHTime(ref, cfg, lap, c);
     total = acc;
@@ -2143,7 +2419,7 @@ function mapaFracciones(visibles, ref, cfg, lap, hayCH) {
     let j = i;
     while (j < visibles.length && visibles[j].p.t !== 'ch') j++;
     const hayCierre = j < visibles.length;
-    const fin = hayCierre ? (hayCH ? fracCH[visibles[j].p.n] : (j + 1) / (visibles.length + 1)) : 1;
+    const fin = hayCierre ? (proporcional ? fracCH[visibles[j].p.n] : (j + 1) / (visibles.length + 1)) : 1;
     const m = j - i;                                   // cuántos no-CH van en este hueco
     for (let k = 0; k < m; k++) {
       const centro = prev + ((k + 1) / (m + 1)) * (fin - prev);
@@ -2212,7 +2488,7 @@ function mapaAdorno(dibujo, x, y) {
    reales del trazado (getPointAtLength), y para eso tiene que estar ya en el
    documento. Aquí se deja cada marca con su fracción anotada y las coloca
    mapaColocarDibujo() en cuanto el navegador ha pintado. */
-function mapaDibujo(visibles, ref, cfg, lap, hayCH, color, piloto, ultimoPasado, cat) {
+function mapaDibujo(visibles, ref, cfg, lap, hayCH, color, piloto, ultimoPasado, cat, marcaPiloto) {
   if (!visibles.length) return '';
   const d = mapaTrazado((cfg.name || 'enduro') + '|' + (parseInt(cfg.numTimeControls) || 1));
   const fr = mapaFracciones(visibles, ref, cfg, lap, hayCH);
@@ -2259,7 +2535,11 @@ function mapaDibujo(visibles, ref, cfg, lap, hayCH, color, piloto, ultimoPasado,
     // y, sobre todo, coincidir con lo que pone la fila de la lista.
     const corto = v.p.t === 'ch' ? 'CH' + v.p.n : v.p.t === 'crono' ? 'C' + v.p.n : '';
     marcas += '<g class="mk mk-' + v.p.t + (v.pasado ? ' pasado' : '')
-           + (v.conPen ? ' con-pen' : '') + (v.indice === ultimoPasado && piloto ? ' aqui' : '')
+           + (v.conPen ? ' con-pen' : '')
+           // La posición del piloto la marca UN solo elemento, el punto de
+           // #mapaPiloto. Cuando además se teñía de rojo la marca del último
+           // fichaje quedaban dos puntos rojos diciendo cosas distintas: uno en
+           // la meta y otro a mitad del bucle.
            + (gMapaAbierto === v.clave ? ' sel' : '')
            + '" data-i="' + v.indice + '" data-f="' + f.f.toFixed(4) + '" data-tipo="' + tipo + '"'
            + ' data-corto="' + corto + '"'
@@ -2281,12 +2561,26 @@ function mapaDibujo(visibles, ref, cfg, lap, hayCH, color, piloto, ultimoPasado,
     +   '<span><i class="lg-ruta"></i>enlace</span>'
     +   '<span><i class="lg-crono"></i>crono (se entra y se sale por el mismo punto)</span>'
     +   '<span><i class="lg-ch"></i>control horario</span>'
-    +   (piloto ? '<span><i class="lg-piloto"></i>' + piloto.dorsal + '</span>' : '')
+    +   (marcaPiloto
+          ? '<span><i class="lg-piloto ' + (marcaPiloto.modo === 'meta' ? 'meta'
+              : marcaPiloto.tono === 'fuera' ? 'fuera' : 'vivo') + '"></i>'
+            + piloto.dorsal + ' · ' + piloto.fullName + ' — '
+            + (marcaPiloto.modo === 'meta' ? 'ha terminado'
+               : marcaPiloto.tono === 'fuera' ? 'último paso conocido'
+               : 'va por aquí')
+            + '</span>'
+          : '')
     + '</div>'
     + '<div class="mapa-aviso">Esquema orientativo: <b>no es un plano</b> y no sirve para '
-    +   'orientarse en el monte. Lo único a escala es el tiempo — los trechos largos del '
-    +   'dibujo son los enlaces de más minutos. Toca un punto del mapa o una fila de abajo '
-    +   'y se marcan a la vez.</div>'
+    +   'orientarse sobre el terreno. '
+    +   ((parseInt(cfg.numTimeControls) || 0) >= 2
+        ? 'Lo único a escala es el tiempo — los trechos largos del dibujo son los enlaces '
+          + 'de más minutos. '
+        // Con un solo control no hay nada proporcional que enseñar, y decir que
+        // lo hay sería justo lo que este aviso trata de evitar.
+        : 'Con un solo control horario no hay tiempos intermedios que repartir, así que los '
+          + 'puntos van espaciados por igual: lo que sí es cierto es el <b>orden</b>. ')
+    +   'Toca un punto del mapa o una fila de abajo y se marcan a la vez.</div>'
     + '</div>';
 }
 
@@ -2325,6 +2619,18 @@ function mapaColocarDibujo() {
   if (etiquetas) etiquetas.innerHTML = '';
 
   const marcas = document.querySelectorAll('#mapaMarcas .mk');
+  // Distancia en píxeles de trazado hasta la marca vecina más cercana. Es lo que
+  // dice cuánto sitio hay de verdad para dibujar algo en ese punto.
+  const fracciones = Array.prototype.map.call(marcas, m => parseFloat(m.dataset.f));
+  const hueco = (f) => {
+    let d = L;                       // sin vecinos, todo el trazado
+    for (let k = 0; k < fracciones.length; k++) {
+      const otra = fracciones[k];
+      if (Math.abs(otra - f) < 1e-9) continue;
+      d = Math.min(d, Math.abs(otra - f) * L);
+    }
+    return Math.min(d, L * 0.25);
+  };
   for (let i = 0; i < marcas.length; i++) {
     const g = marcas[i];
     const f = parseFloat(g.dataset.f);
@@ -2339,7 +2645,13 @@ function mapaColocarDibujo() {
       // Un crono no consume trazado: es un LAZO en el que se entra y se sale por
       // el mismo punto. Dibujarlo como un trozo del bucle decía que el enlace
       // pasa por dentro del tramo, que es justo lo que no ocurre.
-      const ry = 11, rx = 15;
+      //
+      // El tamaño se ajusta al hueco que hay: con tres cronos juntos —un sprint—
+      // los lazos de tamaño fijo se solapaban y no se distinguía cuál era cuál.
+      // Antes que mover los puntos de sitio, que sí significan algo, se encoge
+      // el dibujo.
+      const ry = Math.max(6, Math.min(11, hueco(f) * 0.34));
+      const rx = ry * 1.36;
       const c = { x: pt.x + ej.nx * ry, y: pt.y + ej.ny * ry };
       if (capaCronos) {
         capaCronos.insertAdjacentHTML('beforeend',
@@ -2437,20 +2749,39 @@ function mapaEngancharToques() {
   }
 }
 
-/* El punto del piloto sobre el bucle, en el último sitio por el que consta que
-   pasó. Si no consta ninguno, no se dibuja: mejor nada que ponerlo en la salida
-   y dar a entender que está allí parado. */
-function mapaColocarPiloto(indiceUltimo) {
+/* El punto del piloto sobre el bucle.
+
+   Tres modos, porque son tres cosas distintas y confundirlas fue justo el fallo:
+     · meta   → ha terminado. Va en la bandera de cuadros, no donde fichó por
+                última vez. Un piloto finalizado completó la vuelta entera aunque
+                falten fichajes por el camino; dejarlo a mitad decía que se quedó
+                ahí parado.
+     · vivo   → está en carrera. Su último paso conocido.
+     · fuera  → retirado o descalificado. El último sitio del que hay constancia,
+                que no es lo mismo que dónde está, y por eso la leyenda lo llama
+                así y no "va por aquí".
+   Sin ningún paso conocido no se dibuja nada: ponerlo en la salida daría a
+   entender que sigue allí sin haber arrancado. */
+function mapaColocarPiloto(marca) {
   const cont = document.getElementById('mapaPiloto');
   const ruta = document.getElementById('mapaRuta');
   if (!cont || !ruta) return;
   cont.innerHTML = '';
-  if (indiceUltimo < 0) return;
-  const g = document.querySelector('#mapaMarcas .mk[data-i="' + indiceUltimo + '"]');
-  if (!g) return;
+  if (!marca) return;
   const L = ruta.getTotalLength();
-  const pt = ruta.getPointAtLength(parseFloat(g.dataset.f) * L);
-  cont.innerHTML = '<g transform="translate(' + pt.x.toFixed(1) + ',' + pt.y.toFixed(1) + ')">'
+  let pt, clase;
+  if (marca.modo === 'meta') {
+    pt = ruta.getPointAtLength(0);
+    clase = 'meta';
+  } else {
+    if (marca.i == null || marca.i < 0) return;
+    const g = document.querySelector('#mapaMarcas .mk[data-i="' + marca.i + '"]');
+    if (!g) return;
+    pt = ruta.getPointAtLength(parseFloat(g.dataset.f) * L);
+    clase = marca.tono === 'fuera' ? 'fuera' : 'vivo';
+  }
+  cont.innerHTML = '<g class="pil-g ' + clase + '" transform="translate('
+    + pt.x.toFixed(1) + ',' + pt.y.toFixed(1) + ')">'
     + '<circle class="pil-halo" r="9"/><circle class="pil" r="4.6"/></g>';
 }
 
@@ -2532,6 +2863,636 @@ function ajustarLinea2() {
   if (recortada() && src)   src.style.display   = 'none';
 }
 
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EVOLUCIÓN POR VUELTA
+   ---------------------------------------------------------------------------
+   La tabla de tramos dice los tiempos; esto dice la forma: si el piloto mantiene
+   el ritmo, si se cae al final o si remonta.
+
+   Son DOS gráficos, no uno con dos ejes. El tiempo va en segundos y el puesto
+   en posiciones: meterlos en el mismo eje obligaría a una segunda escala, que
+   es la manera más fácil de hacer decir a un gráfico lo que uno quiera.
+
+   Cada gráfico lleva UNA sola serie, así que no hace falta leyenda: el título
+   dice de quién es. El color es el de su categoría, el mismo que lo identifica
+   en el resto de la app.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Tiempo de cada vuelta = suma de sus cronos. Solo cuenta la vuelta si están
+   TODOS: sumar una vuelta a la que le falta un tramo daría una vuelta
+   artificialmente rápida, que es justo la lectura contraria a la verdadera. */
+function tiemposPorVuelta(r, cfg) {
+  const nS = parseInt(cfg.numStages) || 2;
+  const cat = (cfg.categories || []).find(c => c.name === r.categoria);
+  const out = [];
+  for (let l = 1; l <= (r.nL || 0); l++) {
+    let suma = 0, completa = true;
+    for (let s = 1; s <= nS; s++) {
+      if (!stageScores(cfg, s, l, cat)) continue;    // ese crono no puntúa esa vuelta
+      const t = r.stTimes[s + '-' + l];
+      if (!t) { completa = false; break; }
+      suma += t;
+    }
+    out.push({ vuelta: l, t: completa && suma > 0 ? suma : null });
+  }
+  return out;
+}
+
+/* Puesto tras cada vuelta: se ordena por tiempo acumulado entre los de su
+   categoría que hayan completado esa misma vuelta. Comparar contra quien lleva
+   menos vueltas no significa nada. */
+function puestosPorVuelta(r, res, cfg) {
+  const dela = res.filter(x => x.categoria === r.categoria && x.status === 'ok');
+  const acum = {};
+  dela.forEach(x => { acum[x.id] = tiemposPorVuelta(x, cfg); });
+  const out = [];
+  for (let l = 1; l <= (r.nL || 0); l++) {
+    const vivos = [];
+    for (const x of dela) {
+      const tv = acum[x.id];
+      let suma = 0, ok = true;
+      for (let i = 0; i < l; i++) {
+        if (!tv[i] || tv[i].t == null) { ok = false; break; }
+        suma += tv[i].t;
+      }
+      if (ok) vivos.push({ id: x.id, suma });
+    }
+    vivos.sort((a, b) => a.suma - b.suma);
+    const i = vivos.findIndex(v => v.id === r.id);
+    out.push({ vuelta: l, pos: i >= 0 ? i + 1 : null, de: vivos.length });
+  }
+  return out;
+}
+
+/* Barras de tiempo por vuelta. Barras y no línea porque las vueltas son cosas
+   discretas y en un móvil una línea de cuatro puntos se lee peor que cuatro
+   barras. Extremos de 4 px redondeados, hueco de 2 px, rejilla discreta. */
+function graficoVueltas(r, res, cfg, color) {
+  const datos = tiemposPorVuelta(r, cfg);
+  const conT = datos.filter(d => d.t != null);
+  if (conT.length < 2) return '';                  // con una vuelta no hay evolución
+
+  const W = 320, H = 132, PL = 6, PR = 6, PT = 16, PB = 20;
+  const max = Math.max.apply(null, conT.map(d => d.t));
+  const min = Math.min.apply(null, conT.map(d => d.t));
+  // La escala arranca por debajo del mejor tiempo, no en cero: con vueltas de
+  // duración parecida, un eje desde cero las deja todas iguales y no se ve nada.
+  // Se dice en el pie, porque un eje que no empieza en cero exagera las
+  // diferencias si no se avisa.
+  const base = Math.max(0, min - (max - min) * 0.6 - 1);
+  const esc = (t) => (H - PB) - ((t - base) / ((max - base) || 1)) * (H - PT - PB);
+  const ancho = (W - PL - PR) / datos.length;
+  const bw = Math.max(10, ancho - 6);
+
+  // Referencia: la mejor vuelta de su categoría. Sitúa su ritmo sin tener que
+  // salir a mirar la clasificación.
+  let mejorCat = null;
+  res.filter(x => x.categoria === r.categoria).forEach(x => {
+    tiemposPorVuelta(x, cfg).forEach(d => {
+      if (d.t != null && (mejorCat == null || d.t < mejorCat)) mejorCat = d.t;
+    });
+  });
+
+  const suMejor = min;
+  let barras = '', etiquetas = '';
+  datos.forEach((d, i) => {
+    const x = PL + i * ancho + (ancho - bw) / 2;
+    if (d.t == null) {
+      barras += '<rect class="ev-hueca" x="' + x.toFixed(1) + '" y="' + (PT + 4)
+             + '" width="' + bw.toFixed(1) + '" height="' + (H - PB - PT - 4) + '" rx="4"/>';
+      return;
+    }
+    const y = esc(d.t), h = (H - PB) - y;
+    const esMejor = d.t === suMejor;
+    barras += '<rect class="ev-barra' + (esMejor ? ' mejor' : '') + '" x="' + x.toFixed(1)
+           + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1)
+           + '" height="' + Math.max(2, h).toFixed(1) + '" rx="4"/>';
+    // Etiqueta directa solo en su mejor vuelta: un número sobre cada barra es
+    // ruido, y la ficha de arriba ya tiene todos los tiempos.
+    if (esMejor) etiquetas += '<text class="ev-etq" x="' + (x + bw / 2).toFixed(1)
+           + '" y="' + (y - 4).toFixed(1) + '">' + fmtT(d.t) + '</text>';
+    etiquetas += '<text class="ev-eje" x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 6) + '">'
+              + d.vuelta + '</text>';
+  });
+
+  // La referencia solo se dibuja si cae dentro de la escala ampliada. Cuando el
+  // piloto va lejos del mejor, no cabe — y entonces el pie NO puede seguir
+  // hablando de una línea que no está: se dice con palabras lo que no se puede
+  // enseñar con el dibujo.
+  let ref = '', pieRef = '';
+  if (mejorCat != null) {
+    if (mejorCat >= base && mejorCat <= max) {
+      const y = esc(mejorCat);
+      ref = '<line class="ev-ref" x1="' + PL + '" y1="' + y.toFixed(1) + '" x2="' + (W - PR)
+          + '" y2="' + y.toFixed(1) + '"/>';
+      pieRef = '<span class="ev-leyref">— — mejor vuelta de ' + r.categoria
+             + ': ' + fmtT(mejorCat) + '</span>';
+    } else {
+      pieRef = '<span class="ev-leyref">La mejor vuelta de ' + r.categoria + ' ('
+             + fmtT(mejorCat) + ') queda fuera de este gráfico.</span>';
+    }
+  }
+
+  return '<div class="ev-caja" style="--cat:' + color + '">'
+    + '<div class="ev-tit">Tiempo de cada vuelta</div>'
+    + '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
+    +   'aria-label="Tiempo de cada vuelta de ' + r.fullName + '">'
+    +   ref + barras + etiquetas + '</svg>'
+    + '<div class="ev-pie">'
+    +   pieRef
+    +   '<span>Barra más baja, vuelta más rápida. La escala no empieza en cero: '
+    +   'está ampliada para que se noten las diferencias.</span>'
+    + '</div></div>';
+}
+
+/* Puesto tras cada vuelta. Línea, porque aquí sí importa el recorrido, y con el
+   eje al revés: el 1 arriba, que es como se lee una clasificación. */
+function graficoPuestos(r, res, cfg, color) {
+  const datos = puestosPorVuelta(r, res, cfg);
+  const con = datos.filter(d => d.pos != null);
+  if (con.length < 2) return '';
+
+  const W = 320, H = 108, PL = 20, PR = 8, PT = 12, PB = 20;
+  const peor = Math.max.apply(null, con.map(d => d.pos));
+  const tope = Math.max(peor, 3);
+  const esc = (pos) => PT + ((pos - 1) / ((tope - 1) || 1)) * (H - PT - PB);
+  const paso = (W - PL - PR) / Math.max(1, datos.length - 1);
+  const px = (i) => PL + i * paso;
+
+  let linea = '', puntos = '', ejes = '';
+  let prev = null;
+  datos.forEach((d, i) => {
+    ejes += '<text class="ev-eje" x="' + px(i).toFixed(1) + '" y="' + (H - 6) + '">' + d.vuelta + '</text>';
+    if (d.pos == null) { prev = null; return; }
+    const x = px(i), y = esc(d.pos);
+    linea += (prev === null ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
+    prev = 1;
+    puntos += '<circle class="ev-punto" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5"/>';
+    // Se etiquetan solo el primero y el último: el resto se lee por la forma.
+    if (i === 0 || i === datos.length - 1)
+      puntos += '<text class="ev-etq" x="' + x.toFixed(1) + '" y="' + (y - 8).toFixed(1) + '">'
+             + d.pos + '°</text>';
+  });
+  // Referencia del primer puesto, para saber cuánto le falta al de arriba.
+  const y1 = esc(1);
+  const linea1 = '<line class="ev-ref" x1="' + PL + '" y1="' + y1.toFixed(1)
+    + '" x2="' + (W - PR) + '" y2="' + y1.toFixed(1) + '"/>'
+    + '<text class="ev-eje izq" x="' + (PL - 6) + '" y="' + (y1 + 3).toFixed(1) + '">1º</text>';
+
+  const ult = con[con.length - 1];
+  return '<div class="ev-caja" style="--cat:' + color + '">'
+    + '<div class="ev-tit">Puesto tras cada vuelta <small>en ' + r.categoria + '</small></div>'
+    + '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" '
+    +   'aria-label="Puesto tras cada vuelta de ' + r.fullName + '">'
+    +   linea1
+    +   '<path class="ev-linea" d="' + linea + '"/>' + puntos + ejes + '</svg>'
+    + '<div class="ev-pie"><span>De ' + ult.de + ' pilotos que habían completado esa vuelta. '
+    + 'Solo entran los que llevaban las mismas vueltas.</span></div></div>';
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPARAR DOS PILOTOS
+   ---------------------------------------------------------------------------
+   La conversación que tiene la gente en meta es "¿dónde le has sacado el
+   tiempo?". La clasificación da el resultado; esto da el porqué, tramo a tramo.
+
+   Se compara SIEMPRE contra el piloto elegido, no contra el líder, y la
+   diferencia acumulada se calcula solo con los cronos que han hecho LOS DOS:
+   sumar tramos que a uno le faltan daría una ventaja inventada.
+   ═══════════════════════════════════════════════════════════════════════════ */
+let gCompA = null, gCompB = null;
+
+function showComparar(idA, idB, pushState) {
+  if (pushState === undefined) pushState = true;
+  gCompA = idA || gCompA;
+  gCompB = idB !== undefined ? idB : gCompB;
+  gView = 'comparar';
+  showView('vComparar');
+  renderComparar();
+  if (pushState) history.pushState({ view: 'comparar', a: gCompA, b: gCompB }, '', '');
+}
+
+function compararCon(id) { gCompB = id; renderComparar();
+  try { history.replaceState({ view: 'comparar', a: gCompA, b: gCompB }, '', ''); } catch (e) {} }
+function compararOtro() { gCompB = null; renderComparar(); }
+function compararVolver() { history.back(); }
+
+function renderComparar() {
+  const cont = document.getElementById('compBody');
+  if (!cont || !gData) return;
+  const cfg = gData.config || {};
+  const res = buildResults(computeSchedule(gData.riders || [], cfg), cfg,
+                           gData.timing || {}, gData.stageData || {});
+  const A = res.find(x => x.id === gCompA);
+  if (!A) { cont.innerHTML = '<div class="empty"><div class="empty-icon">⚖</div>'
+    + '<div class="empty-text">Sin piloto que comparar</div></div>'; return; }
+
+  const volver = document.getElementById('compVolverTxt');
+  if (volver) volver.textContent = A.fullName.split(',')[0];
+
+  // ── Todavía no hay rival: se elige ──────────────────────────────────────
+  if (!gCompB) {
+    const mismos = res.filter(x => x.categoria === A.categoria && x.id !== A.id);
+    cont.innerHTML = '<div class="comp-cab">'
+      + '<div class="comp-tit">Comparar con…</div>'
+      + '<div class="comp-sub">' + A.dorsal + ' · ' + A.fullName + ' contra quién</div>'
+      + '</div>'
+      + '<div class="buscador" style="padding:0 0 .5rem">'
+      +   '<span class="lupa">🔍</span>'
+      +   '<input id="buscarRival" type="search" inputmode="search" autocomplete="off" '
+      +     'placeholder="Buscar dorsal o nombre…" oninput="filtrarRivales()">'
+      + '</div>'
+      + '<div id="listaRivales">' + mismos.map(r =>
+          '<button class="comp-elegir" data-buscar="'
+          + (r.dorsal + ' ' + r.fullName + ' ' + (r.club || '')).toLowerCase().replace(/"/g, '')
+          + '" onclick="compararCon(' + JSON.stringify(r.id).replace(/"/g, '&quot;') + ')">'
+          + '<span class="ce-dorsal">' + r.dorsal + '</span>'
+          + '<span class="ce-nom">' + r.fullName + '</span>'
+          + (r.stTotal > 0 ? '<span class="ce-t">' + fmtT(r.total) + '</span>' : '<span class="ce-t dim">—</span>')
+          + '</button>').join('')
+      + '</div>';
+    return;
+  }
+
+  const B = res.find(x => x.id === gCompB);
+  if (!B) { gCompB = null; renderComparar(); return; }
+
+  const nS = parseInt(cfg.numStages) || 2;
+  const nL = Math.max(A.nL || 0, B.nL || 0);
+  const colorA = colorCategoria(cfg, A.categoria), colorB = colorCategoria(cfg, B.categoria);
+
+  // ── Filas: un crono de una vuelta ───────────────────────────────────────
+  let filas = '', acum = 0, ganaA = 0, ganaB = 0, comunes = 0;
+  for (let l = 1; l <= nL; l++) {
+    for (let s = 1; s <= nS; s++) {
+      const k = s + '-' + l;
+      const ta = A.stTimes[k], tb = B.stTimes[k];
+      if (!ta && !tb) continue;
+      let der, clase = '';
+      if (ta && tb) {
+        const d = ta - tb;                       // negativo = gana A
+        acum += d; comunes++;
+        if (d < 0) ganaA++; else if (d > 0) ganaB++;
+        clase = d < 0 ? 'ganaA' : d > 0 ? 'ganaB' : '';
+        der = '<span class="cf-dif ' + (d < 0 ? 'a' : d > 0 ? 'b' : '') + '">'
+            + (d === 0 ? '=' : (d < 0 ? '−' : '+') + fmtT(Math.abs(d))) + '</span>'
+            + '<span class="cf-acum">' + (acum === 0 ? '=' :
+                (acum < 0 ? '−' : '+') + fmtT(Math.abs(acum))) + '</span>';
+      } else {
+        // A uno le falta el tiempo: se enseña, pero NO entra en el acumulado.
+        der = '<span class="cf-falta">falta un tiempo</span>';
+      }
+      filas += '<div class="comp-fila ' + clase + '">'
+        + '<span class="cf-tramo">Tramo ' + s + '<small>Vuelta ' + l + '</small></span>'
+        + '<span class="cf-ta">' + (ta ? fmtT(ta) : '—') + '</span>'
+        + '<span class="cf-tb">' + (tb ? fmtT(tb) : '—') + '</span>'
+        + '<span class="cf-der">' + der + '</span>'
+        + '</div>';
+    }
+  }
+
+  // ── Resumen de arriba ───────────────────────────────────────────────────
+  const difTotal = (A.stTotal > 0 && B.stTotal > 0) ? A.total - B.total : null;
+  const quien = difTotal === null ? '' : difTotal < 0 ? A.fullName.split(',')[0]
+                                       : difTotal > 0 ? B.fullName.split(',')[0] : '';
+  cont.innerHTML =
+    '<div class="comp-cab">'
+    + '<div class="comp-caras">'
+    +   '<div class="cara a">'
+    +     '<div class="cara-d">' + A.dorsal + '</div><div class="cara-n">' + A.fullName + '</div>'
+    +     '<div class="cara-c">' + A.categoria + '</div></div>'
+    +   '<div class="cara-vs">vs</div>'
+    +   '<div class="cara b">'
+    +     '<div class="cara-d">' + B.dorsal + '</div><div class="cara-n">' + B.fullName + '</div>'
+    +     '<div class="cara-c">' + B.categoria + '</div></div>'
+    + '</div>'
+    + (difTotal !== null
+        ? '<div class="comp-total ' + (difTotal < 0 ? 'a' : difTotal > 0 ? 'b' : '') + '">'
+          + (difTotal === 0 ? 'Empatados al total'
+             : quien + ' va por delante ' + fmtT(Math.abs(difTotal)))
+          + '</div>'
+        : '<div class="comp-total neutro">Todavía no se pueden comparar los totales</div>')
+    + (comunes
+        ? '<div class="comp-marcador">Cronos ganados · <b class="a">' + ganaA + '</b>'
+          + ' — <b class="b">' + ganaB + '</b>'
+          + '<span> de ' + comunes + ' comparables</span></div>'
+        : '')
+    + '<button class="mapa-btn" style="margin-top:.55rem" onclick="compararOtro()">⇄ Cambiar de rival</button>'
+    + '</div>'
+    + (filas
+        ? '<div class="comp-lista">'
+          + '<div class="comp-cabtabla"><span>Tramo</span><span>' + A.dorsal + '</span>'
+          +   '<span>' + B.dorsal + '</span><span>dif · acum</span></div>'
+          + filas + '</div>'
+        : '<div class="empty"><div class="empty-icon">⏱</div>'
+          + '<div class="empty-text">Ninguno de los dos tiene tiempos todavía</div></div>')
+    + (A.penTotal > 0 || B.penTotal > 0
+        ? '<div class="comp-pen">Penalizaciones · '
+          + '<b class="a">' + fmtPen(A.penTotal) + '</b> — <b class="b">' + fmtPen(B.penTotal) + '</b>'
+          + '<div class="comp-nota">Van aparte: no son tiempo de crono, se suman al final.</div></div>'
+        : '')
+    + '<div class="comp-nota" style="margin-top:.7rem">La diferencia acumulada solo cuenta los '
+    + 'cronos que han hecho los dos. Si a uno le falta un tiempo, ese tramo se muestra pero no suma.</div>';
+}
+
+function filtrarRivales() {
+  const q = (document.getElementById('buscarRival') || {}).value || '';
+  const t = q.trim().toLowerCase();
+  document.querySelectorAll('#listaRivales .comp-elegir').forEach(b => {
+    b.style.display = !t || (b.dataset.buscar || '').includes(t) ? '' : 'none';
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PILOTOS SEGUIDOS
+   ---------------------------------------------------------------------------
+   Un espectador viene a mirar a uno o dos pilotos de entre cien. Todo lo demás
+   —categorías, scratch, mapa— es contexto de esos dos.
+
+   Se guardan por NOMBRE, no por dorsal ni por el id interno. El dorsal cambia
+   de una carrera a otra y el id se regenera al republicar: con cualquiera de
+   los dos, seguir a alguien duraría una prueba. Con el nombre, el que sigue a
+   su hijo lo sigue todo el año sin volver a tocar nada.
+   ═══════════════════════════════════════════════════════════════════════════ */
+const LS_SEGUIDOS = 'er_seguidos';
+
+function claveSeguido(nombre) {
+  return String(nombre || '').trim().toUpperCase().replace(/\s+/g, ' ');
+}
+function leerSeguidos() {
+  try { const v = JSON.parse(localStorage.getItem(LS_SEGUIDOS) || '[]');
+        return Array.isArray(v) ? v : []; } catch (e) { return []; }
+}
+let gSeguidos = leerSeguidos();
+
+function esSeguido(nombre) { return gSeguidos.indexOf(claveSeguido(nombre)) >= 0; }
+
+function alternarSeguido(nombre, ev) {
+  if (ev) { ev.stopPropagation(); ev.preventDefault(); }
+  const k = claveSeguido(nombre);
+  if (!k) return;
+  const i = gSeguidos.indexOf(k);
+  if (i >= 0) gSeguidos.splice(i, 1); else gSeguidos.push(k);
+  try { localStorage.setItem(LS_SEGUIDOS, JSON.stringify(gSeguidos)); }
+  catch (e) {
+    // Si no se puede guardar, se dice. Un corazón que se apaga al recargar sin
+    // explicación es peor que no tener la función.
+    avisoBreve('No se ha podido guardar: el navegador no deja guardar datos');
+  }
+  renderAll();
+}
+
+/* Aviso corto y visible. No hay ninguno en esta app y hace falta para cosas que
+   pasan y se van (copiado al portapapeles, no se pudo guardar…). */
+function avisoBreve(txt) {
+  let t = document.getElementById('avisoBreve');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'avisoBreve'; t.className = 'aviso-breve';
+    document.body.appendChild(t);
+  }
+  t.textContent = txt;
+  t.classList.add('ver');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('ver'), 2600);
+}
+
+/* El bloque "Los tuyos" de la portada: los seguidos que corren HOY, con su
+   puesto y su tiempo. Si no hay ninguno o no están en esta carrera, no se
+   pinta nada: un bloque vacío en la portada solo estorba. */
+function renderSeguidos() {
+  const caja = document.getElementById('seguidosBox');
+  if (!caja) return;
+  caja.innerHTML = '';
+  if (!gData || !gData.config) return;
+  const cfg = gData.config;
+  const hayCarrera = !!cfg.name;
+  // Sin nadie a quien seguir, la portada invita a elegir en vez de callarse:
+  // era imposible descubrir la función sin entrar en una categoría por azar.
+  if (!gSeguidos.length) {
+    if (hayCarrera) caja.innerHTML = '<button class="seg-invita" onclick="showSeguir()">'
+      + '<span class="si-ico">☆</span>'
+      + '<span><b>Sigue a un piloto</b>'
+      + '<small>Lo verás aquí en cuanto entres, sin buscarlo</small></span></button>';
+    return;
+  }
+  const res = buildResults(computeSchedule(gData.riders || [], cfg), cfg,
+                           gData.timing || {}, gData.stageData || {});
+  const mios = res.filter(r => esSeguido(r.fullName));
+  if (!mios.length) return;
+
+  // Puesto dentro de su categoría, con el mismo criterio que la clasificación.
+  const puestoDe = (r) => {
+    const cat = res.filter(x => x.categoria === r.categoria)
+                   .filter(x => x.stTotal > 0 && x.status === 'ok')
+                   .sort((a, b) => a.total - b.total);
+    const i = cat.findIndex(x => x.id === r.id);
+    return i >= 0 ? { pos: i + 1, de: cat.length } : null;
+  };
+
+  caja.innerHTML = '<div class="seguidos">'
+    + '<div class="seguidos-tit">⭐ Los tuyos</div>'
+    + mios.map(r => {
+        const p = puestoDe(r);
+        const color = colorCategoria(cfg, r.categoria);
+        const estado = r.status === 'dnf' ? 'Retirado'
+                     : r.status === 'dsq' ? 'Descalificado'
+                     : r.finished ? 'Ha terminado'
+                     : 'Vuelta ' + Math.min((r.lastDoneLap || 0) + 1, r.nL);
+        return '<button class="seg-fila" style="--cat:' + color + '" '
+          + 'onclick="irAPiloto(' + JSON.stringify(r.id).replace(/"/g, '&quot;') + ')">'
+          + '<span class="seg-dorsal">' + r.dorsal + '</span>'
+          + '<span class="seg-info"><span class="seg-nom">' + r.fullName + '</span>'
+          +   '<span class="seg-cat">' + r.categoria + ' · ' + estado + '</span></span>'
+          + '<span class="seg-der">'
+          +   (p ? '<span class="seg-pos">' + p.pos + '°</span>' : '')
+          +   (r.stTotal > 0 ? '<span class="seg-t">' + fmtT(r.total) + '</span>' : '')
+          + '</span></button>';
+      }).join('')
+    + '<button class="seg-mas" onclick="showSeguir()">＋ Seguir a otro piloto</button>'
+    + '</div>';
+}
+
+/* ── Enlace directo a un piloto ─────────────────────────────────────────────
+   Se comparte por el dorsal y no por el id interno: el id se regenera cada vez
+   que se republica la carrera y el enlace se rompería a media mañana. El dorsal
+   dura toda la prueba y además se entiende leyéndolo.
+
+   Ojo con el formato: en esta app el HASH de la dirección ES la URL de los
+   datos, así que un enlace nunca puede ir en el hash. Va como `?dorsal=`, igual
+   que se hizo con el código de supervisión después de romperlo una vez. */
+function enlacePiloto(dorsal) {
+  const base = location.origin + location.pathname;
+  let q = '?dorsal=' + encodeURIComponent(dorsal);
+  // Si estamos viendo una carrera del histórico, el enlace la fija. Sin esto
+  // apuntaría a "la carrera de ahora", que cambia sola.
+  if (gViewingArchive && gViewingArchive.path) {
+    q += '&carrera=' + encodeURIComponent(gViewingArchive.path);
+  }
+  return base + q + location.hash;
+}
+
+function compartirPiloto(dorsal, nombre) {
+  const url = enlacePiloto(dorsal);
+  const carrera = (gData && gData.config && gData.config.name) || 'Enduro Revolution';
+  const texto = nombre + ' (dorsal ' + dorsal + ') — ' + carrera;
+  if (navigator.share) {
+    navigator.share({ title: texto, text: texto, url: url })
+      .catch(() => {});                       // cancelar no es un error
+    return;
+  }
+  const copiar = navigator.clipboard && navigator.clipboard.writeText
+    ? navigator.clipboard.writeText(url)
+    : Promise.reject();
+  const permanente = !!(gViewingArchive && gViewingArchive.path);
+  copiar.then(() => avisoBreve(permanente ? 'Enlace copiado · vale siempre'
+                                          : 'Enlace copiado · apunta a la carrera de ahora'))
+        .catch(() => window.prompt('Copia el enlace:', url));
+}
+
+/* Abre la ficha del dorsal que venga en la dirección, si existe. Se llama en
+   cada llegada de datos hasta que se consigue: el enlace puede abrirse antes de
+   que haya llegado la carrera. */
+let gDorsalPendiente = (function () {
+  const m = String(location.search || '').match(/[?&]dorsal=([^&]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+})();
+let gCarreraPendiente = (function () {
+  const m = String(location.search || '').match(/[?&]carrera=([^&]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+})();
+let gCargandoEnlace = false;
+
+/* El enlace trae una carrera concreta del histórico: se carga esa antes de
+   buscar al piloto. Si falla (fichero movido, sin red) se dice, en vez de
+   enseñar callando el dorsal de otra carrera, que sería un piloto distinto con
+   el mismo número. */
+async function atenderCarreraEnlace() {
+  if (!gCarreraPendiente || gCargandoEnlace) return false;
+  gCargandoEnlace = true;
+  const path = gCarreraPendiente;
+  gCarreraPendiente = null;
+  try {
+    await loadArchivedRace(path);
+    if (!gViewingArchive || gViewingArchive.path !== path) throw new Error('no se cargó');
+  } catch (e) {
+    gDorsalPendiente = null;
+    avisoBreve('No se pudo abrir esa prueba del histórico');
+  }
+  gCargandoEnlace = false;
+  return true;
+}
+
+function atenderEnlaceDirecto() {
+  if (gCarreraPendiente) { atenderCarreraEnlace().then(() => { try { atenderEnlaceDirecto(); } catch (e) {} }); return; }
+  if (gCargandoEnlace) return;
+  if (!gDorsalPendiente || !gData || !(gData.riders || []).length) return;
+  const d = String(gDorsalPendiente).trim();
+  const r = (gData.riders || []).find(x => String(x.dorsal).trim() === d && !x.dns);
+  gDorsalPendiente = null;                    // un solo intento con datos ya cargados
+  // La dirección se limpia para que al recargar no vuelva a saltar aquí.
+  try {
+    const q = String(location.search || '')
+      .replace(/([?&])dorsal=[^&]*&?/, '$1')
+      .replace(/([?&])carrera=[^&]*&?/, '$1')
+      .replace(/[?&]$/, '');
+    history.replaceState(null, '', location.pathname + q + location.hash);
+  } catch (e) {}
+  if (!r) { avisoBreve('El dorsal ' + d + ' no está en esta carrera'); return; }
+  irAPiloto(r.id);
+}
+
+
+/* ── Elegir a quién seguir, desde la portada ───────────────────────────────
+   Antes solo se podía seguir a alguien entrando en su categoría y buscándolo
+   dentro. Pero quien llega a la app viene a por una persona y normalmente no
+   sabe en qué categoría corre: obligarle a adivinarla para poder seguirla era
+   pedirle justo el dato que viene a buscar. Aquí se busca por dorsal, nombre o
+   club sobre TODA la carrera. */
+function showSeguir(pushState) {
+  if (pushState === undefined) pushState = true;
+  gView = 'seguir';
+  showView('vSeguir');
+  renderSeguir();
+  if (pushState) history.pushState({ view: 'seguir' }, '', '');
+  setTimeout(() => { const i = document.getElementById('buscarSeguir'); if (i) i.focus(); }, 60);
+}
+
+function renderSeguir() {
+  const cont = document.getElementById('seguirBody');
+  if (!cont) return;
+  if (!gData || !(gData.riders || []).length) {
+    cont.innerHTML = '<div class="empty"><div class="empty-icon">⭐</div>'
+      + '<div class="empty-text">No hay ninguna carrera cargada</div></div>';
+    return;
+  }
+  const cfg = gData.config || {};
+  const q = (document.getElementById('buscarSeguir') || {}).value || '';
+  const t = q.trim().toLowerCase();
+  const pilotos = (gData.riders || []).filter(r => !r.dns);
+
+  // Los seguidos primero, y el resto solo cuando se busca: una lista de cien
+  // nombres sin filtrar no ayuda a nadie a encontrar el suyo.
+  const seguidos = pilotos.filter(r => esSeguido(r.fullName));
+  const coinciden = t
+    ? pilotos.filter(r => !esSeguido(r.fullName) &&
+        (r.dorsal + ' ' + r.fullName + ' ' + (r.club || '')).toLowerCase().includes(t))
+    : [];
+
+  const fila = (r) => {
+    const on = esSeguido(r.fullName);
+    return '<button class="sg-fila' + (on ? ' on' : '') + '" style="--cat:'
+      + colorCategoria(cfg, r.categoria) + '" '
+      + 'onclick="alternarSeguido(' + JSON.stringify(r.fullName).replace(/"/g, '&quot;') + ', event)">'
+      + '<span class="sg-estrella">' + (on ? '★' : '☆') + '</span>'
+      + '<span class="sg-dorsal">' + r.dorsal + '</span>'
+      + '<span class="sg-info"><span class="sg-nom">' + r.fullName + '</span>'
+      +   '<span class="sg-cat">' + r.categoria + (r.club ? ' · ' + r.club : '') + '</span></span>'
+      + '</button>';
+  };
+
+  cont.innerHTML =
+    '<div class="sg-cab"><div class="sg-tit">Seguir pilotos</div>'
+    + '<div class="sg-sub">Búscalos por dorsal, nombre o club. Los que sigas salen '
+    + 'destacados en la portada, en su categoría y en la clasificación.</div></div>'
+    + '<div class="buscador" style="padding:0 0 .6rem">'
+    +   '<span class="lupa">🔍</span>'
+    +   '<input id="buscarSeguir" type="search" inputmode="search" autocomplete="off" '
+    +     'placeholder="Dorsal, nombre o club…" value="' + q.replace(/"/g, '&quot;') + '" '
+    +     'oninput="renderSeguir()">'
+    + '</div>'
+    + (seguidos.length
+        ? '<div class="sg-grupo">Siguiendo (' + seguidos.length + ')</div>'
+          + seguidos.map(fila).join('')
+        : '')
+    + (t
+        ? (coinciden.length
+            ? '<div class="sg-grupo">Resultados</div>' + coinciden.map(fila).join('')
+            : '<div class="sg-vacio">Ningún piloto coincide con «' + q.trim() + '»</div>')
+        : (seguidos.length ? '' : '<div class="sg-vacio">Escribe para buscar. '
+            + 'Por ejemplo, el dorsal de quien vas a ver.</div>'));
+
+  // Al repintar por cada tecla hay que devolver el foco y el cursor al buscador.
+  const i = document.getElementById('buscarSeguir');
+  if (i && document.activeElement !== i) {
+    i.focus();
+    try { i.setSelectionRange(i.value.length, i.value.length); } catch (e) {}
+  }
+}
+
+/* Entrar directamente a la ficha de un piloto desde cualquier sitio. */
+function irAPiloto(id) {
+  if (!gData) return;
+  const cfg = gData.config || {};
+  const r = (gData.riders || []).find(x => x.id === id);
+  if (!r) return;
+  window._clasifCat = r.categoria;
+  gCatSel = r.categoria;
+  showDetail(id);
+}
+
 function renderWelcome() {
   const cfg = (gData && gData.config) || {};
   // Sin datos de carrera: la tarjeta "Carrera actual" se atenúa y se explica
@@ -2581,6 +3542,7 @@ function renderWelcome() {
       s.style.color = 'var(--amber, #f59e0b)';
     }
   }
+  try { renderSeguidos(); } catch (e) { console.warn('seguidos:', e); }
 }
 
 // Recarga a fondo: borra cachés y service workers y vuelve a pedir los datos.
@@ -2993,11 +3955,16 @@ function renderCatList() {
       const leaderTime = leader ? fmtT(leader.total) : '';
       const leaderStr = leaderName && leaderTime ? leaderName + ' · ' + leaderTime : (total > 0 ? 'En curso' : 'Sin datos');
       const outStr = out > 0 ? ` · <span style="color:#f59e0b">${out} ret/dsq</span>` : '';
+      // Con seis categorías y cien pilotos, lo primero que busca quien sigue a
+      // alguien es en cuál está. Se marca la tarjeta y se dice cuántos lleva.
+      const mios = riders.filter(r => esSeguido(r.fullName));
+      const marcaSeg = mios.length
+        ? `<span class="cat-seg" title="Sigues a ${mios.length} de esta categoría">★ ${mios.length}</span>` : '';
       return `
-        <div class="cat-card" onclick="showClasifFor('${encodeURIComponent(name)}','${encodeURIComponent(sel)}')">
+        <div class="cat-card${mios.length ? ' con-seguidos' : ''}" onclick="showClasifFor('${encodeURIComponent(name)}','${encodeURIComponent(sel)}')">
           <div class="cat-card-accent" style="background:${accent}"></div>
           <div class="cat-card-body">
-            <div class="cat-card-name">${name}</div>
+            <div class="cat-card-name">${name}${marcaSeg}</div>
             <div class="cat-card-total" style="color:${accent}">${finished.length > 0 ? finished.length : '—'}<span style="font-size:0.7rem;font-weight:500;opacity:0.7"> fin.</span></div>
             <div class="cat-card-leader">${leaderStr}</div>
             <div class="cat-card-bar-wrap" style="position:relative;overflow:hidden">
@@ -3150,9 +4117,12 @@ function renderClasif() {
     // data-buscar: dorsal y nombre en minúsculas, para el filtro del buscador
     const clave = (r.dorsal + ' ' + r.fullName + ' ' + (r.club||'')).toLowerCase();
     return `
-      <div class="pilot-row ${podium} ${r.finished ? 'fin' : ''} ${r.status === 'dnf' ? 'dnf' : r.status === 'dsq' ? 'dsq' : ''}"
+      <div class="pilot-row ${podium} ${r.finished ? 'fin' : ''} ${r.status === 'dnf' ? 'dnf' : r.status === 'dsq' ? 'dsq' : ''} ${esSeguido(r.fullName) ? 'seguido' : ''}"
            style="--cat:${colorCat}" data-buscar="${clave.replace(/"/g,'')}"
            onclick="showDetail('${r.id}')">
+        <button class="pr-seg${esSeguido(r.fullName) ? ' on' : ''}"
+                onclick="alternarSeguido(${JSON.stringify(r.fullName).replace(/"/g,'&quot;')}, event)"
+                aria-label="Seguir a este piloto" title="Seguir a este piloto">★</button>
         <div class="pr-pos">${posEl}</div>
         <div class="pr-dorsal">${r.dorsal}</div>
         <div class="pr-info">
@@ -3252,8 +4222,19 @@ function renderDetail() {
         <div class="detail-pos-label">de ${catResults.length}</div>
       </div>` : ''}
     </div>
-    <div style="margin:-.35rem 0 .9rem">
+    <div style="margin:-.35rem 0 .9rem;display:flex;gap:.4rem;flex-wrap:wrap">
       <button class="mapa-btn" onclick="showMapa(${JSON.stringify(r.categoria).replace(/"/g,'&quot;')}, ${JSON.stringify(r.id).replace(/"/g,'&quot;')})">🗺 Ver por dónde va</button>
+      <button class="mapa-btn seguir${esSeguido(r.fullName) ? ' on' : ''}"
+              onclick="alternarSeguido(${JSON.stringify(r.fullName).replace(/"/g,'&quot;')}, event)">
+        ${esSeguido(r.fullName) ? '★ Siguiendo' : '☆ Seguir'}
+      </button>
+      <button class="mapa-btn" onclick="showComparar(${JSON.stringify(r.id).replace(/"/g,'&quot;')}, null)">⚖ Comparar</button>
+      <button class="mapa-btn" onclick="compartirPiloto(${JSON.stringify(r.dorsal).replace(/"/g,'&quot;')}, ${JSON.stringify(r.fullName).replace(/"/g,'&quot;')})">↗ Compartir</button>
+    </div>
+    <div style="margin:-.55rem 0 .9rem;font-size:.62rem;color:var(--muted);line-height:1.45">
+      ${gViewingArchive && gViewingArchive.path
+        ? '↗ Compartir da un enlace que vale siempre: lleva esta prueba dentro.'
+        : '↗ Compartir apunta a «la carrera de ahora». Para un enlace que valga siempre, abre esta prueba desde el histórico.'}
     </div>`;
 
   // Stage times (tramos)
@@ -3316,6 +4297,14 @@ function renderDetail() {
   }
   chHtml += '</div>';
   if (hasCH) html += chHtml;
+
+  // Evolución por vuelta. Va después de los tramos y los controles porque es
+  // interpretación: primero los datos, y luego la lectura de los datos.
+  try {
+    const gv = graficoVueltas(r, results, cfg, colorCat);
+    const gp = graficoPuestos(r, results, cfg, colorCat);
+    if (gv || gp) html += '<div class="section-title">Evolución por vuelta</div>' + gv + gp;
+  } catch (e) { console.warn('evolución:', e); }
 
   // Penalties summary
   const hasPen = r.penTotal > 0;
@@ -3405,6 +4394,11 @@ window.addEventListener('popstate', (e) => {
     showDetail(gPilotId, false);
   } else if (dest === 'mapa') {
     showMapa(state.cat, state.pid, false);
+  } else if (dest === 'seguir') {
+    showSeguir(false);
+  } else if (dest === 'comparar') {
+    gCompA = state.a || gCompA; gCompB = state.b !== undefined ? state.b : gCompB;
+    showComparar(gCompA, gCompB, false);
   } else if (dest === 'clasif') {
     if (state.catName !== undefined) window._clasifCat = state.catName;
     if (state.catSel !== undefined) gCatSel = state.catSel;
