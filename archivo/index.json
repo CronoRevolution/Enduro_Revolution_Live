@@ -1,6 +1,20 @@
 {
   "races": [
     {
+      "path": "archivo/2026/2026-11-14-enduro-sprint-sotopalacios-2026.json",
+      "name": "Enduro Sprint Sotopalacios 2026",
+      "date": "2026-11-14",
+      "year": "2026",
+      "organizer": "FMCL",
+      "campeonatos": [
+        "Campeonato de Enduro de Castilla y León",
+        "Campeonato de Enduro de Cantabria",
+        "Campeonato de Enduro de Navarra"
+      ],
+      "riders": 57,
+      "archivedAt": "2026-11-16T10:05:51.163Z"
+    },
+    {
       "path": "archivo/2026/2026-09-12-enduro-sprint-villacantid-2026.json",
       "name": "Enduro Sprint Villacantid 2026",
       "date": "2026-09-12",
