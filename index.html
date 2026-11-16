@@ -1682,6 +1682,45 @@ const checkAutoDsq=(rider,cfg,timing)=>{
   return{autoDsq:false,reason:""};
 };
 
+/* Tiempo de una crono tal y como cuenta para la clasificación: lo puesto a
+   mano (timing.crono_s_l) manda sobre lo que llegó del BACK o del decoder.
+   Devuelve el texto tal cual ("6:39.825") o null. Todas las vistas deben leer
+   el tiempo por aquí: la pestaña Clasificación lo leía directamente de
+   stageData y en Sotopalacios dio un total distinto del resto (dorsal 15). */
+const tiempoCronoRaw=(rider,s,l,timing,stageData)=>{
+  const t=timing&&timing[rider.id]&&timing[rider.id][`crono_${s}_${l}`];
+  const ov=t&&t.actual;
+  if(ov)return ov;
+  const sd=stageData&&stageData[`stage_${s}`];
+  return(sd&&sd[rider.dorsal]&&sd[rider.dorsal][l])||null;
+};
+
+/* Diferencias de cada piloto con el anterior clasificado y con el primero de
+   su categoría. Recibe las filas YA ORDENADAS como se enseñan, cada una con:
+     ranked  — si tiene posición (los que no, ni dan ni reciben diferencia)
+     total   — segundos, penalizaciones incluidas
+     hechos  — cronos completados (contarCronosHechos)
+   Solo se compara a pilotos con los MISMOS cronos hechos: entre uno que lleva
+   tres tramos y otro que lleva dos, la resta no significa nada. En ese caso, y
+   para el primero, la diferencia es null (se pinta «—»). Una diferencia
+   negativa tampoco tiene sentido en una lista ordenada: también null.
+   Devuelve [{ant, primero}] en segundos, en el mismo orden que la entrada. */
+const calcDiferencias=(filas)=>{
+  let prev=null, lider=null;
+  return filas.map(f=>{
+    if(!f||!f.ranked)return{ant:null,primero:null};
+    const cmp=(o)=>{
+      if(!o||o.hechos!==f.hechos)return null;
+      const d=f.total-o.total;
+      return d>=0?d:null;
+    };
+    const res=lider?{ant:cmp(prev),primero:cmp(lider)}:{ant:null,primero:null};
+    if(!lider)lider=f;
+    prev=f;
+    return res;
+  });
+};
+
 /* Cuántos cronos ha completado un piloto en total (sumando todas las vueltas).
    Sirve para ordenar la clasificación con más finura que contando vueltas: dos
    pilotos en la misma vuelta pueden llevar distinto número de cronos hechos, y
